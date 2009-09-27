@@ -7,10 +7,12 @@
  
 (defsystem :lispmud
   :depends-on (:split-sequence)
-  :components ((:file "src/packages" )
-	       (:file "src/bank" :depends-on ("src/packages"))
-	       (:file "src/command" :depends-on ("src/packages"))
-	       (:file "src/roll" :depends-on ("src/packages"))
-	       (:file "src/room" :depends-on ("src/packages"))
-	       (:file "src/zone" :depends-on ("src/packages"))
-	       (:file "src/registration" :depends-on ("src/packages"))))
+  :components ((:module "src" :components
+		       ((:file "packages" )
+			(:file "bank" :depends-on ("packages"))
+			(:file "sock" :depends-on ("packages"))
+			(:file "command" :depends-on ("packages"))
+			(:file "roll" :depends-on ("packages"))
+			(:file "room" :depends-on ("packages"))
+			(:file "zone" :depends-on ("packages"))
+			(:file "registration" :depends-on ("packages"))))))

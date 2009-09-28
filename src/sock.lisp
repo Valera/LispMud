@@ -9,6 +9,13 @@
 (defmethod close ((stream telnet-input-stream) &key abort)
   (close (stream-of stream) :abort abort))
 
+(defmethod stream-line-length ((stream telnet-input-stream))
+  nil)
+
+(defmethod stream-line-column ((stream telnet-input-stream))
+  "Don't know what line column on the client side, returning 0"
+  '0)
+
 (defmethod stream-read-char ((stream telnet-input-stream))
   (let ((c (read-char (stream-of stream) nil :eof)))
     (if (char= c #\Return)
@@ -42,20 +49,18 @@
 (defmethod stream-line-column ((stream telnet-output-stream))
   (col-index-of stream))
 
-(defmethod stream-write-line ((stream telnet-output-stream) line)
-  (with-accessors ((inner-stream stream-of)) stream
-    (write line :stream inner-stream)
-    (write-char #\Return inner-stream)
-    (write-char #\Newline inner-stream)
-    (force-output inner-stream)))
+(defmethod stream-line-length ((stream telnet-output-stream))
+  nil)
 
+(defmethod stream-force-output ((stream telnet-output-stream))
+  (force-output (stream-of stream)))
 
 (defmethod stream-write-char ((stream telnet-output-stream)
 			      char)
   (with-accessors ((inner-stream stream-of) (cols col-index-of)) stream
     (if (char= char #\Newline)
       (progn (write-char #\Return inner-stream)
-	     (write-char char inner-stream)
+	     (write-char #\Newline inner-stream)
 	     (force-output inner-stream)
 	     (setf cols 0))
       (progn (incf cols)
@@ -67,13 +72,12 @@
   (let ((raw-stream (socket-make-stream socket :input t :output t)))
     (make-two-way-stream
      (make-instance 'telnet-input-stream  :stream raw-stream)
-     ;(make-string-output-stream)
      (make-instance 'telnet-output-stream :stream raw-stream))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun make-socket (addr port)
-  "Quick'n'dirty temp function."
+(defun make-server-socket (addr port)
+  "Launch telnet listener and return only one accepted socket for debug purpose."
   (let ((s (make-instance 'inet-socket :type :stream :protocol :tcp)))
     (setf (sockopt-reuse-address  s) T)
     (setf (sockopt-receive-buffer s) 0)
@@ -81,19 +85,9 @@
     (socket-listen s 5)
     (socket-accept s)))
 
-(defun make-stream (addr port)
-  "Quick'n'dirty temp function."
-  (socket-make-stream (make-socket addr port)))
-
-(defun telnet-read-line (stream)
-  (let ((str (read-line stream)))
-    (subseq str 0 (1- (length str)))))
-
-(defun telnet-send-line (string stream)
-  (write-line string stream)
-  (force-output stream))
-
 (defun start-telnet-server (addr port callback)
+  "Starts telnet server for given address and port.
+  Launches callback with every accepted telnet stream as argument."
   (let ((s (make-instance 'inet-socket :type :stream :protocol :tcp)))
     (unwind-protect
 	 (progn
@@ -106,11 +100,13 @@
       (socket-close s))))
 
 (defun telnet-accept (socket callback)
-  (let* ((sock (socket-accept socket))
-	 (sock-stream (socket-make-stream sock :input t :output t)))
+  "Fucntion for accepting connections. Accepts and creates telnet stream."
+  (let* ((sock (socket-accept socket)))
     (unwind-protect
-	 (sb-thread:make-thread #'(lambda () (funcall callback sock-stream)))
-      (close sock-stream)
+	 (let ((sock-stream (make-telnet-stream sock)))
+	   (unwind-protect
+		(sb-thread:make-thread #'(lambda () (funcall callback sock-stream)))
+	     (close sock-stream)))
       (socket-close sock))))
 
 ;;; Example:

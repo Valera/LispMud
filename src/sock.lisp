@@ -18,13 +18,15 @@
 
 (defmethod stream-read-char ((stream telnet-input-stream))
   (let ((c (read-char (stream-of stream) nil :eof)))
-    (if (char= c #\Return)
-	(let ((c2 (read-char (stream-of stream) nil :eof)))
-	  (if (char= c2 #\Newline)
+    (if (eq c :eof)
+	:eof
+	(if (char= c #\Return)
+	    (let ((c2 (read-char (stream-of stream) nil :eof)))
+	      (if (char= c2 #\Newline)
 	      #\Newline
 	      (progn (unread-char c2 (stream-of stream))
 		     #\Return)))
-	c)))
+	    c))))
 
 (defmethod stream-unread-char ((stream telnet-input-stream)
 			       char)
@@ -80,7 +82,6 @@
   "Launch telnet listener and return only one accepted socket for debug purpose."
   (let ((s (make-instance 'inet-socket :type :stream :protocol :tcp)))
     (setf (sockopt-reuse-address  s) T)
-    ;(setf (sockopt-receive-buffer s) 0)
     (socket-bind s  addr port)
     (socket-listen s 5)
     (socket-accept s)))
@@ -92,7 +93,6 @@
     (unwind-protect
 	 (progn
 	   (setf (sockopt-reuse-address  s) T)
-	   ;(setf (sockopt-receive-buffer s) 0)
 	   (socket-bind s  addr port)
 	   (socket-listen s 5)
 	   (loop
@@ -101,20 +101,13 @@
 
 (defun telnet-accept (socket callback)
   "Fucntion for accepting connections. Accepts and creates telnet stream."
-  (let* ((sock (socket-accept socket)))
+  (let ((sock (socket-accept socket)))
     (make-thread
      (lambda ()
        (unwind-protect
 	    (let ((stream (make-telnet-stream sock)))
 	      (unwind-protect
-		   (let ((*standard-input* stream)
-			 (*standard-output* stream)
-			 (*debug-io* (make-string-output-stream))
-			 (*query-io* (make-string-output-stream))
-			 (*error-output* (make-string-output-stream))
-			 (*trace-output* (make-string-output-stream))
-			 (*terminal-io*  (make-string-output-stream)))
-		     (funcall callback stream))
+		   (funcall callback stream)
 		(close stream)))
 	 (socket-close sock))))))
 

@@ -21,7 +21,7 @@
 ;(defun add-command (string function)
 ;  (setf (gethash string *command-hash*) function))
 
-(defun add-command2 (string fun)
+(defun add-command (string fun)
   (add-command3 *command-root* string fun))
 
 (defun add-command3 (tree string fun)
@@ -75,6 +75,7 @@
   (let* ((command-and-args (parse-command command-string))
 	 (command (first command-and-args))
 	 (args (rest command-and-args))
-	 (command-fun (gethash command *command-hash*)))
+	 (command-fun (find-closest-command *command-root* command)))
     (if command-fun
-	(apply command-fun args))))
+	(apply command-fun args)
+	(format t "Комманда не найдена. Первая комманда ~a ~a~%" *command-root* (node-string *command-root*)))))

@@ -69,7 +69,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defun make-telnet-stream (socket)
-  (let ((raw-stream (socket-make-stream socket :input t :output t)))
+  (let ((raw-stream (socket-make-stream socket :input t :output t :buffering :line :external-format :cp1251)))
     (make-two-way-stream
      (make-instance 'telnet-input-stream  :stream raw-stream)
      (make-instance 'telnet-output-stream :stream raw-stream))))
@@ -80,7 +80,7 @@
   "Launch telnet listener and return only one accepted socket for debug purpose."
   (let ((s (make-instance 'inet-socket :type :stream :protocol :tcp)))
     (setf (sockopt-reuse-address  s) T)
-    (setf (sockopt-receive-buffer s) 0)
+    ;(setf (sockopt-receive-buffer s) 0)
     (socket-bind s  addr port)
     (socket-listen s 5)
     (socket-accept s)))
@@ -92,7 +92,7 @@
     (unwind-protect
 	 (progn
 	   (setf (sockopt-reuse-address  s) T)
-	   (setf (sockopt-receive-buffer s) 0)
+	   ;(setf (sockopt-receive-buffer s) 0)
 	   (socket-bind s  addr port)
 	   (socket-listen s 5)
 	   (loop
@@ -102,12 +102,21 @@
 (defun telnet-accept (socket callback)
   "Fucntion for accepting connections. Accepts and creates telnet stream."
   (let* ((sock (socket-accept socket)))
-    (unwind-protect
-	 (let ((sock-stream (make-telnet-stream sock)))
-	   (unwind-protect
-		(sb-thread:make-thread #'(lambda () (funcall callback sock-stream)))
-	     (close sock-stream)))
-      (socket-close sock))))
+    (make-thread
+     (lambda ()
+       (unwind-protect
+	    (let ((stream (make-telnet-stream sock)))
+	      (unwind-protect
+		   (let ((*standard-input* stream)
+			 (*standard-output* stream)
+			 (*debug-io* (make-string-output-stream))
+			 (*query-io* (make-string-output-stream))
+			 (*error-output* (make-string-output-stream))
+			 (*trace-output* (make-string-output-stream))
+			 (*terminal-io*  (make-string-output-stream)))
+		     (funcall callback stream))
+		(close stream)))
+	 (socket-close sock))))))
 
 ;;; Example:
 ;;;

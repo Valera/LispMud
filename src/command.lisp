@@ -26,7 +26,9 @@
 
 (defun add-command3 (tree string fun)
   (if (or (string= string (node-string tree)) (= 0 (length (node-string tree))))
-      (setf (node-string tree) string)
+      (progn
+	(setf (node-string tree) string)
+	(setf (node-value tree) fun))
       (if (string< string (node-string tree))
 	  (if (node-left tree)
 	      (add-command3 (node-left tree) string fun)
@@ -36,7 +38,7 @@
 	      (setf (node-right tree) (make-instance 'node :string string))))))
 
 (defun find-closest-command (tree string)
-  (if (<= (length string) 1)
+  (if (<= (length string) 2)
       nil
       (find-closest-command1 tree string)))
 
@@ -45,10 +47,10 @@
       (node-value tree)
       (if (string< string (node-string tree))
 	  (if (node-left tree)
-	      (find-closest-command1 tree string)
+	      (find-closest-command1 (node-left tree) string)
 	      (final-check tree string))
 	  (if (node-right tree)
-	      (find-closest-command1 tree string)
+	      (find-closest-command1 (node-right tree) string)
 	      (final-check tree string)))))
 
 (defun final-check (tree str)
@@ -60,7 +62,8 @@
 	(node-value tree)
 	nil)))
 
-(defun init-command-hash ()
+(defun init-command-table ()
+  (setf *command-root* (make-instance 'node))
   (add-command "эхо"  #'(lambda (&rest args) (format t "~{|~a| ~}~%" args)))
   (add-command "s" nil)
   (add-command "n" nil)
@@ -78,4 +81,4 @@
 	 (command-fun (find-closest-command *command-root* command)))
     (if command-fun
 	(apply command-fun args)
-	(format t "Комманда не найдена. Первая комманда ~a ~a~%" *command-root* (node-string *command-root*)))))
+	(format t "Комманда не найдена.~%"))))

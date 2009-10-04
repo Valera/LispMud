@@ -1,9 +1,9 @@
 (in-package :lispmud)
 
 (defclass zone ()
-  ((room-list :initarg :roomlist :initform nil)
-   (exit-hash :initarg :exithash :initform (make-hash-table :test 'equal))
-   (description :initarg :description)))
+  ((room-list :initarg :roomlist :initform nil :accessor room-list)
+   (exit-hash :initarg :exithash :initform (make-hash-table :test 'equal) :accessor exit-hash)
+   (description :initarg :description :accessor description)))
 
 (defun load-zone (file-name)
   (with-open-file (stream file-name)
@@ -11,7 +11,7 @@
       (with-slots (room-list exit-hash) zone
 	(let ((room-id-hash (make-hash-table :test 'equal)))
 	  (dolist (room-plist (read stream))
-	    (let ((cur-room  (make-instance 'room1 :description (getf room-plist :desription))))
+	    (let ((cur-room  (make-instance 'room1 :description (getf room-plist :description))))
 	      (push cur-room room-list)
 	      (setf (gethash (getf room-plist :id) room-id-hash)  (getf room-plist :id)) 
 	      (dolist (i '(:south :north :west :east))
@@ -23,4 +23,6 @@
 	  (maphash #'(lambda (key val)
 		       (format t "~a ~a~%" key val))
 		   exit-hash)
+	  (format t "rooms: ~a~%" room-list)
+	  (format t "descr: ~a~%" (description (first room-list)))
 	  zone)))))

@@ -3,22 +3,24 @@
 (in-package :lispmud)
 
 (defvar *store* (make-hash-table :test 'equal))
-(defvar *store-mutex* (make-mutex))
+(defvar *store-mutex* (make-mutex :name "Store mutex"))
 
 (defun put-to-store (person thing)
-  ;(assert (gethash person *store*))
-  (push thing (gethash person *store*)))
+  (with-recursive-lock (*store-mutex*)
+    (push thing (gethash person *store*))))
 
 (defun take-from-store (person thing)
-  ;(assert (gethash person *store*))
-  (remove thing (gethash person *store*)))
+  (with-recursive-lock (*store-mutex*)
+    (remove thing (gethash person *store*))))
 
 (defun items-in-store (person)
-  ;(assert (gethash person *store*))
-  (gethash person hash-table))
+  (with-recursive-lock (*store-mutex*)
+    (gethash person *store*)))
 
-(defun load-store ()
-  ())
+(defun load-store (file-name)
+  (with-recursive-lock (*store-mutex*)
+    (setf *store* (load-hash-table file-name))))
 
-(defun save-store ()
-  ())
+(defun dump-store (file-name)
+  (with-recursive-lock (*store-mutex*)
+    (dump-hash-table *store* file-name)))

@@ -19,8 +19,10 @@
   (with-recursive-lock (*user-db-mutex*)
     (setf (gethash user-name *user-db*) password)))
 
-(defun dump-user-db ()
-  ())
+(defun dump-user-db (file-name)
+  (with-recursive-lock (*user-db-mutex*)
+    (dump-hash-table *user-db* file-name)))
 
-(defun load-user-db ()
-  ())
+(defun load-user-db (file-name)
+  (with-recursive-lock (*user-db-mutex*)
+    (setf *user-db* (load-hash-table file-name))))

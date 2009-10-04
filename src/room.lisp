@@ -5,7 +5,7 @@
    (north :initarg :north)
    (west  :initarg :west)
    (east  :initarg :east)
-   (description :initarg :description)))
+   (description :initarg :description :accessor description)))
 
 (defun reverse-direction (direction)
   "Returns reverse direction; for ex. :north is reverse for :south"

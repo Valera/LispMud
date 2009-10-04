@@ -32,13 +32,13 @@
       (if (string< string (node-string tree))
 	  (if (node-left tree)
 	      (add-command3 (node-left tree) string fun)
-	      (setf (node-left tree) (make-instance 'node :string string)))
+	      (setf (node-left tree) (make-instance 'node :string string :value fun)))
 	  (if (node-right tree)
 	      (add-command3 (node-right tree) string fun)
-	      (setf (node-right tree) (make-instance 'node :string string))))))
+	      (setf (node-right tree) (make-instance 'node :string string :value fun))))))
 
 (defun find-closest-command (tree string)
-  (if (<= (length string) 2)
+  (if (<= (length string) 0)
       nil
       (find-closest-command1 tree string)))
 
@@ -65,7 +65,10 @@
 (defun init-command-table ()
   (setf *command-root* (make-instance 'node))
   (add-command "эхо"  #'(lambda (&rest args) (format t "~{|~a| ~}~%" args)))
-  (add-command "s" nil)
+  (add-command "s"
+	       #'(lambda ()
+		   (setf (cur-room *thread-vars*)
+			 (gethash (cons (cur-room *thread-vars*) :south) (exit-hash (cur-zone *thread-vars*))))))
   (add-command "n" nil)
   (add-command "w" nil)
   (add-command "e" nil)

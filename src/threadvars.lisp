@@ -1,9 +1,13 @@
 ;;; threadvars.lisp
 
-;; This file contains class for objects storing player variables.
+;; This file contains class for container of player variables.
 ;; Each player thread should have one special variable of this class. 
 
-(defclass player-vars ()
+(in-package :lispmud)
+
+(defvar *thread-vars* nil)
+
+(defclass thread-vars ()
   ((user-name :accessor user-name)
    (character-name :accessor character-name)
    (cur-room :accessor cur-room)

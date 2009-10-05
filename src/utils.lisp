@@ -17,3 +17,6 @@
 	  (test (when (eql (first sexp) :test) (second sexp)))
 	  (alist (if test (third sexp) sexp)))
      (alist-hash-table alist :test (or test 'eql)))))
+
+(defun print-hash-table (hash)
+  (maphash #'(lambda (key val) (format t "~a => ~a~%" key val)) hash))

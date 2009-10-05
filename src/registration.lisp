@@ -1,13 +1,12 @@
 (in-package :lispmud)
 
-(defvar *first-prompt*
+(defparameter *first-prompt*
 "========================================================
       Добро пожаловать в лисповый мад!
 ========================================================
-"
-)
 
-(defvar *user-db* (make-hash-table :test 'equal))
+Введите 1 для входа в игру, или 2 для регистрации в игру"
+)
 
 (defun read-value-in-range (prompt lower upper)
   "Reads integer value from stream from upper to lower inclusive"
@@ -27,36 +26,6 @@
 (defun not-empty-string-p (string)
   (string/= "" string))
 
-(defun enter-to-game (stream)
-  (format stream "~a~%" *first-prompt*)
-  (ecase (read-value-in-range stream "Введите 1 для входа, 2 для регистрации" 1 2)
-    (1 (let ((user (prompt-read "Введите логин" stream :satisfy-p #'not-empty-string-p))
-	     (password  (prompt-read "Введите пароль" stream :satisfy-p #'not-empty-string-p)))
-	 (if (string= (gethash user *user-db*) password)
-	     (format stream "Ура!~%")
-	     (format stream "Не ура. :(~%"))))
-    (2 (let ((user (prompt-read "Введите имя пользователя" stream)))
-	 (+ 1 1)))))
-
-(defun register (stream)
-  (let ((user (prompt-read "Введите логин" stream :satisfy-p #'not-empty-string-p))
-	(password  (prompt-read "Введите пароль" stream :satisfy-p #'not-empty-string-p)))
-    (if (gethash user *user-db*)
-	(error "User already registered"))
-    (setf (gethash user *user-db*) password)))
-    ;(login user password)))
-
-(defun login (stream)
-  (let ((user (prompt-read "Введите логин" stream :satisfy-p #'not-empty-string-p))
-	(password  (prompt-read "Введите пароль" stream :satisfy-p #'not-empty-string-p)))
-    (unless (gethash user *user-db*)
-      (error "User is not registered"))
-    (unless (string= (gethash user *user-db*) password)
-      (error "Wrong password"))))
-
-(defun print-hash (hash)
-  (maphash #'(lambda (key val) (format t "~a => ~a~%" key val)) hash))
-
 ;;; FIXME - end - leak
 (defmacro deffsm (name &body body)
   (let ((vars (mapcar #'second body)))
@@ -70,8 +39,6 @@
 				 dispatch-fun)))
 	    )))))
 
-(defun can-login (a b) nil)
-
 (deffsm enter-game
   (go-enter enter (read-value-in-range *first-prompt* 1 2)
 	    (ecase enter
@@ -83,8 +50,14 @@
 		     (go go-register-pass2))
   (go-register-pass2 rpass2 (prompt-read "Введите пароль ещё раз")
 		     (if (string= rpass1 rpass2)
-			 (progn (format t "Регистрация завершена.~%")
-				(return-from enter-game))
+			 (if (user-exists-p rname)
+			     (progn
+			       (format t "Извините, пользователь с таким именем уже существует.~%")
+			       (go go-register-name))
+			     (progn 
+			       (format t "Регистрация завершена.~%")
+			       (register-user rname rpass1)
+			       (go  go-enter)))
 			 (progn (format t "Пароли не совпадают. Пожалуйста, пройдите регистрацию заново.~%")
 				(go go-register-name))))
   (go-login-name lname (prompt-read "Имя")
@@ -92,4 +65,6 @@
   (go-login-pass lpass (prompt-read "Пароль")
 		 (if (can-login lname lpass)
 		     (login lname lpass)
-		     (go go-login-name))))
+		     (progn
+		       (format t "Имя и пароль не соответствуют друг другу. Повторите ввод.~%")
+		       (go go-login-name)))))

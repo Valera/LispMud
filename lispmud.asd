@@ -10,6 +10,7 @@
   :components ((:module "src" :components
 		       ((:file "packages" )
 			(:file "main" :depends-on ("packages"))
+			(:file "threadvars" :depends-on ("packages"))
 			(:file "utils" :depends-on ("packages"))
 			(:file "bank" :depends-on ("packages"))
 			(:file "sock" :depends-on ("packages"))

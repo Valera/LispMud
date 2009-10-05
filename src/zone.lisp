@@ -13,7 +13,7 @@
 	  (dolist (room-plist (read stream))
 	    (let ((cur-room  (make-instance 'room1 :description (getf room-plist :description))))
 	      (push cur-room room-list)
-	      (setf (gethash (getf room-plist :id) room-id-hash)  (getf room-plist :id)) 
+	      (setf (gethash (getf room-plist :id) room-id-hash) cur-room); (getf room-plist :id)) 
 	      (dolist (i '(:south :north :west :east))
 		(setf (gethash (cons cur-room i) exit-hash) (getf room-plist i)))))
 	  (maphash #'(lambda (key val)

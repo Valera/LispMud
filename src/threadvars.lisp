@@ -11,6 +11,7 @@
   ((user-name :accessor user-name)
    (character-name :accessor character-name)
    (cur-room :accessor cur-room)
-   (cur-zone :accessor cur-zone)))
+   (cur-zone :accessor cur-zone)
+   (end-p :accessor end-p :initform nil)))
 
 

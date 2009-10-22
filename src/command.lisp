@@ -12,6 +12,11 @@
 	(setf (cur-room *thread-vars*) next-room)
 	(format t "Извините, но вы не можете идти в этом направлении"))))
 
+(defun command-leave ()
+  (format t "До свидания, возвращайтесь быстрей!~%")
+  (setf (end-p *thread-vars*) t))
+  
+
 (defun init-command-table ()
   (let ((command-list nil)
 	(command-hash (make-hash-table :test 'equal)))
@@ -21,7 +26,7 @@
       (add-command "с" #'(lambda () (command-go-to-direction :north)))
       (add-command "з" #'(lambda () (command-go-to-direction :west)))
       (add-command "в" #'(lambda () (command-go-to-direction :east)))
-      (add-command "конец" nil))
+      (add-command "конец" #'command-leave))
     (setf command-list (nreverse command-list))
     (dolist (i command-list)
       (let ((i-str (first i))
@@ -39,7 +44,7 @@
   (let* ((command-and-args (parse-command command-string))
 	 (command (first command-and-args))
 	 (args (rest command-and-args))
-	 (command-fun (gethash command *command-root*)))
+	 (command-fun (gethash command *command-hash*)))
     (if command-fun
 	(apply command-fun args)
 	(format t "Комманда не найдена.~%"))))

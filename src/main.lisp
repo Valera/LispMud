@@ -19,11 +19,13 @@
 	 (format t "~a~%"  (room-list (cur-zone *thread-vars*)))
 	 (setf (cur-room *thread-vars*) (first (room-list (cur-zone *thread-vars*))))
 	 (format t "*t-v*0 ~a~%" *thread-vars*)
-	 (player-loop)))))
+	 (player-loop)
+	 (close stream)))))
 
 (defun player-loop ()
   (loop with line
-     until (equal :eof (setf line (read-line *standard-input* nil :eof)))
+     until (or (equal :eof (setf line (read-line *standard-input* nil :eof)))
+	       (end-p *thread-vars*))
      do (progn
 	  (format t "Line read~%")
 	  (format t "*t-v* ~a~%" *thread-vars*)

@@ -6,7 +6,8 @@
 (defvar *mail-queue-mutex* (make-mutex :name "Mail system mutex"))
 
 (defun send-mail (from-hero to-hero message)
-  (push (list from-hero to-hero message) *mail-queue*))
+  (with-recursive-lock (*mail-queue-mutex*)
+    (push (list from-hero to-hero message) *mail-queue*)))
 
 (defun recv-mail (receiver-hero)
   (with-recursive-lock (*mail-queue-mutex*)

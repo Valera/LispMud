@@ -14,3 +14,21 @@
     (north 'south)
     (west 'east)
     (east 'west)))
+
+(defclass room ()
+  ())
+
+(defclass zone ()
+  ((room-list)))
+
+(defgeneric move-in-direction (room direction))
+
+(defun load-zone (filename)
+  (with-open-file (stream filename)
+    (destructuring-bind
+	  (&key zone-description zone-rooms zone-mobs
+		((:zone-size (size-x size-y))))
+	(read stream)
+      (pvalue zone-description zone-rooms zone-mobs
+	      (list size-x size-y))
+      (make-array `(,size-x ,size-y)))))

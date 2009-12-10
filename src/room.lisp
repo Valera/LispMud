@@ -15,7 +15,7 @@
     (west 'east)
     (east 'west)))
 
-(defclass room ()
+(defclass myroom ()
   ())
 
 (defclass zone ()
@@ -23,7 +23,7 @@
 
 (defgeneric move-in-direction (room direction))
 
-(defun load-zone (filename)
+(defun load-zone2 (filename)
   (with-open-file (stream filename)
     (destructuring-bind
 	  (&key zone-description zone-rooms zone-mobs

@@ -7,6 +7,8 @@
    (east  :initarg :east)
    (description :initarg :description :accessor description)))
 
+(defvar *exits* '(:north :east :south :west) "All posible directions for iteration")
+
 (defun reverse-direction (direction)
   "Returns reverse direction; for ex. :north is reverse for :south"
   (ecase direction
@@ -16,12 +18,33 @@
     (east 'west)))
 
 (defclass myroom ()
-  ())
+  ((short-description :accessor short-description :initform "" :initarg :short-description)
+   (description :accessor description :initform "" :initarg :description)
+   (west-exit :accessor west-exit :initform nil :initarg :west-exit)
+   (east-exit :accessor east-exit :initform nil :initarg :east-exit)
+   (south-exit :accessor south-exit :initform nil :initarg :south-exit)
+   (north-exit :accessor north-exit :initform nil :initarg :north-exit)))
 
 (defclass zone ()
   ((room-list)))
 
 (defgeneric move-in-direction (room direction))
+(defgeneric exit (room direction))
+
+(defmethod exit ((room myroom) direction)
+  (ecase direction
+    (:north (north-exit room))
+    (:east  (east-exit  room))
+    (:south (south-exit room))
+    (:west  (west-exit  room))))
+
+(defun dx-for-direction (direction)
+  (ecase direction
+    (:north 0) (:east  1) (:south 0) (:west  -1)))
+
+(defun dy-for-direction (direction)
+  (ecase direction
+    (:north 1) (:east  0) (:south -1) (:west  0)))
 
 (defun load-zone2 (filename)
   (with-open-file (stream filename)
@@ -31,4 +54,36 @@
 	(read stream)
       (pvalue zone-description zone-rooms zone-mobs
 	      (list size-x size-y))
-      (make-array `(,size-x ,size-y)))))
+      (let ((map (make-array (list size-x size-y) :initial-element nil)))
+	(dolist (room zone-rooms)
+	  (pvalue room)
+	  (destructuring-bind
+		(&key ((:coord (x y)))
+		      room-description
+		      west-exit east-exit north-exit south-exit)
+	      room
+	    (setf (aref map x y)
+		  (make-instance 'myroom :description room-description
+				 :west-exit west-exit :east-exit east-exit
+				 :north-exit north-exit :south-exit south-exit))))
+	(check-exits-in-zone map)
+	map))))
+
+(defun check-exits-in-zone (zone-map)
+  (let ((size-x (array-dimension zone-map 0))
+	(size-y (array-dimension zone-map 1)))
+    (dotimes (x size-x)
+      (dotimes (y size-y)
+	(let ((room (aref zone-map x y)))
+	  (if room
+	      (dolist (direction *exits*)
+		(let (x1 y1 room1)
+		  (if (and (exit room direction)
+			   (or (>= (setf x1 (+ (dx-for-direction direction) x)) size-x)
+			       (< 0 x1 x)
+			       (>= (setf y1 (+ (dy-for-direction direction) y)) size-y)
+			       (< 0 y1 y)
+			       (not (setf room1 (aref zone-map x1 y1)))
+			       (not (exit room1 (reverse-direction direction)))))
+		      (format t "Warning: ~a exit in room (~a, ~a) doen't have pair"
+			      direction x y))))))))))

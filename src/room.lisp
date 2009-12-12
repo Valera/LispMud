@@ -1,5 +1,6 @@
 (in-package :lispmud)
 
+;; FIXME: delete class room1.
 (defclass room1 ()
   ((south :initarg :south)
    (north :initarg :north)
@@ -24,6 +25,33 @@
    (east-exit :accessor east-exit :initform nil :initarg :east-exit)
    (south-exit :accessor south-exit :initform nil :initarg :south-exit)
    (north-exit :accessor north-exit :initform nil :initarg :north-exit)))
+
+(defclass exit ()
+  ((dest-room :accessor dest-room :initarg :accessor)))
+
+(defgeneric can-pass-through (exit))
+
+(defmethod can-pass-through ((exit exit))
+  t)
+
+(defgeneric pass-through (exit))
+
+(defclass passage (exit)
+  ()
+  (:documentation "простой проход"))
+
+(defclass door (exit)
+  ((opened-p :accessor opened-p :initarg opened-p :initform t)
+   (unlock-key :accessor unlock-key :initarg unlock-key :initform nil))
+  (:documentation "Дрерь может быть закрыта и открыта"))
+
+(defclass hotel (exit)
+  ()
+  (:documentation "персонаж отдыхает в гостиннице, пока игрок ушёл из игры"))
+
+(defclass portal (exit)
+  ()
+  (:documentation "проход в другую зону"))
 
 (defclass zone ()
   ((room-list)))
@@ -87,3 +115,16 @@
 			       (not (exit room1 (reverse-direction direction)))))
 		      (format t "Warning: ~a exit in room (~a, ~a) doen't have pair"
 			      direction x y))))))))))
+
+#+nil
+(defun link-rooms (zone-map)
+  (let ((size-x (array-dimension zone-map 0))
+	(size-y (array-dimension zone-map 1)))
+    (dotimes (x size-x)
+      (dotimes (y size-y)
+	(let ((room (aref zone-map x y)))
+	  (if room
+	      (dolist (direction *exits*)
+		(let (x1 y1 room1)
+		  (if (exit room direction)
+		      (setf ))))))))))

@@ -6,7 +6,7 @@
 (in-package :lispmud-system)
  
 (defsystem :lispmud
-  :depends-on (:split-sequence :alexandria)
+  :depends-on (:split-sequence :alexandria :iterate)
   :components ((:module "src" :components
 		       ((:file "packages" )
 			(:file "utils" :depends-on ("packages"))
@@ -20,4 +20,5 @@
 			(:file "zone" :depends-on ("packages" "utils"))
 			(:file "store" :depends-on ("packages" "utils"))
 			(:file "userdb" :depends-on ("packages" "utils"))
-			(:file "registration" :depends-on ("packages" "utils"))))))
+			(:file "registration" :depends-on ("packages" "utils"))
+			(:file "world" :depends-on ("packages" "utils"))))))

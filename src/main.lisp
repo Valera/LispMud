@@ -2,9 +2,11 @@
 
 (defvar +localhost+ #(0 0 0 0))
 (defvar +port+ 8000)
+(defvar *world* "world.lmud")
 
 (defun initialize-game ()
-  (init-command-table))
+  (init-command-table)
+  (load-world *world*))
 
 (defun main ()
   (initialize-game)

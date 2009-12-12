@@ -2,10 +2,19 @@
 
 (in-package :lispmud)
 
-(defvar *command-hash* (make-hash-table :test 'equal))
+(defvar *command-hash* (make-hash-table :test 'equal)
+  "Хэш-таблица, ставит в соответсвие строке команды функцию для её обработки")
 
 (defun command-go-to-direction (direction)
-  (assert (member direction '(:south :north :west :east)))
+  (assert (member direction *exits*))
+  (let ((next-room (exit (cur-room *thread-vars*) direction)))
+    (if next-room
+	(setf (cur-room *thread-vars*) next-room)
+	(format t "Извините, но вы не можете идти в этом направлении"))))
+
+#+nil
+(defun command-go-to-direction (direction)
+  (assert (member direction *exits*))
   (let ((next-room (gethash (cons (cur-room *thread-vars*) direction)
 			    (exit-hash (cur-zone *thread-vars*)))))
     (if next-room
@@ -13,9 +22,8 @@
 	(format t "Извините, но вы не можете идти в этом направлении"))))
 
 (defun command-leave ()
-  (format t "До свидания, возвращайтесь быстрей!~%")
+  (format t "До свидания, возвращайся быстрей!~%")
   (setf (end-p *thread-vars*) t))
-  
 
 (defun init-command-table ()
   (let ((command-list nil)
@@ -37,14 +45,10 @@
 		   (setf (gethash substr command-hash) i-fun))))))
     (setf *command-hash* command-hash)))
 
-(defun parse-command (command-string)
-  (split-sequence #\Space command-string  :remove-empty-subseqs t))
-
 (defun exec-command (command-string)
-  (let* ((command-and-args (parse-command command-string))
-	 (command (first command-and-args))
-	 (args (rest command-and-args))
-	 (command-fun (gethash command *command-hash*)))
-    (if command-fun
-	(apply command-fun args)
-	(format t "Комманда не найдена.~%"))))
+  (destructuring-bind (command &rest args)
+      (split-sequence #\Space command-string  :remove-empty-subseqs t)
+    (let ((command-fun (gethash command *command-hash*)))
+      (if command-fun
+	  (apply command-fun args)
+	  (format t "Комманда не найдена.~%")))))

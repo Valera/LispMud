@@ -16,7 +16,5 @@
 (defun link-zones (zone-list)
   "Создаёт ссыки между зонами. Например, по порталу
    из одной зоны можно попасть в другую."
-  ())
-  
-
-;    (destructuring-bind (&
+  (pvalue zone-list)
+  zone-list)

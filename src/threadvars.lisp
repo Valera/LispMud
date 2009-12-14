@@ -1,17 +1,18 @@
 ;;; threadvars.lisp
 
-;; This file contains class for container of player variables.
-;; Each player thread should have one special variable of this class. 
-
 (in-package :lispmud)
 
-(defvar *thread-vars* nil)
+;; Данный файл содержи объявления динамических переменных, описывающих состояние
+;; конкретного игрока. Для каждой игровой нити инициализируются в соотвествии с
+;; информацией об игроке. 
 
-(defclass thread-vars ()
-  ((user-name :accessor user-name)
-   (character-name :accessor character-name)
-   (cur-room :accessor cur-room)
-   (cur-zone :accessor cur-zone)
-   (end-p :accessor end-p :initform nil)))
+;; Вся информация об игроке содержится в этих переменных. Класс с фукнциями доступа
+;; делать не очень удобно, так как их придётся слишком часто использовать.
 
+;; TODO написать макросистему для объявления наборов динамических переменных и
+;; отслеживания их изменений.
 
+(defvar *player-account-name* nil "Имя игрока в системе")
+(defvar *player-room* nil "Текущая комната игрока")
+(defvar *player-zone* nil "Текущая зона игрока")
+(defvar *player-exit-flag* nil "Устанавливается для выхода из игры")

@@ -29,12 +29,10 @@
 (defclass exit ()
   ((dest-room :accessor dest-room :initarg :accessor)))
 
-(defgeneric can-pass-through (exit))
+(defgeneric can-pass (exit))
 
-(defmethod can-pass-through ((exit exit))
+(defmethod can-pass ((exit exit))
   t)
-
-(defgeneric pass-through (exit))
 
 (defclass passage (exit)
   ()
@@ -54,17 +52,21 @@
   (:documentation "проход в другую зону"))
 
 (defclass zone ()
-  ((room-list)))
+  ((map-array :accessor map-array :initarg :map-array)
+   (entry-rooms :accessor entry-rooms :initarg :entry-rooms)))
 
 (defgeneric move-in-direction (room direction))
 (defgeneric exit (room direction))
 
-(defmethod exit ((room myroom) direction)
+(defun exit-slot-for-direction (direction)
   (ecase direction
-    (:north (north-exit room))
-    (:east  (east-exit  room))
-    (:south (south-exit room))
-    (:west  (west-exit  room))))
+    (:north 'north-exit)
+    (:east  'east-exit)
+    (:south 'south-exit)
+    (:west  'west-exit)))
+
+(defmethod exit ((room myroom) direction)
+  (slot-value room (exit-slot-for-direction direction)))
 
 (defun dx-for-direction (direction)
   (ecase direction
@@ -82,7 +84,8 @@
 	(read stream)
       (pvalue zone-description zone-rooms zone-mobs
 	      (list size-x size-y))
-      (let ((map (make-array (list size-x size-y) :initial-element nil)))
+      (let ((map (make-array (list size-x size-y) :initial-element nil))
+	    (entry-rooms nil))
 	(dolist (room zone-rooms)
 	  (pvalue room)
 	  (destructuring-bind
@@ -93,30 +96,11 @@
 	    (setf (aref map x y)
 		  (make-instance 'myroom :description room-description
 				 :west-exit west-exit :east-exit east-exit
-				 :north-exit north-exit :south-exit south-exit))))
-	(check-exits-in-zone map)
-	map))))
+				 :north-exit north-exit :south-exit south-exit))
+	    (push (aref map x y) entry-rooms)))
+	(link-rooms map)
+	(make-instance 'zone :map-array map :entry-rooms entry-rooms)  ))))
 
-(defun check-exits-in-zone (zone-map)
-  (let ((size-x (array-dimension zone-map 0))
-	(size-y (array-dimension zone-map 1)))
-    (dotimes (x size-x)
-      (dotimes (y size-y)
-	(let ((room (aref zone-map x y)))
-	  (if room
-	      (dolist (direction *exits*)
-		(let (x1 y1 room1)
-		  (if (and (exit room direction)
-			   (or (>= (setf x1 (+ (dx-for-direction direction) x)) size-x)
-			       (< 0 x1 x)
-			       (>= (setf y1 (+ (dy-for-direction direction) y)) size-y)
-			       (< 0 y1 y)
-			       (not (setf room1 (aref zone-map x1 y1)))
-			       (not (exit room1 (reverse-direction direction)))))
-		      (format t "Warning: ~a exit in room (~a, ~a) doen't have pair"
-			      direction x y))))))))))
-
-#+nil
 (defun link-rooms (zone-map)
   (let ((size-x (array-dimension zone-map 0))
 	(size-y (array-dimension zone-map 1)))
@@ -127,4 +111,13 @@
 	      (dolist (direction *exits*)
 		(let (x1 y1 room1)
 		  (if (exit room direction)
-		      (setf ))))))))))
+		      (if (or (>= (setf x1 (+ (dx-for-direction direction) x)) size-x)
+			      (< 0 x1 x)
+			      (>= (setf y1 (+ (dy-for-direction direction) y)) size-y)
+			      (< 0 y1 y)
+			      (not (setf room1 (aref zone-map x1 y1)))
+			      (not (exit room1 (reverse-direction direction))))
+			  (format t "Warning: ~a exit in room (~a, ~a) doen't have pair"
+			      direction x y)
+			  (setf (slot-value room (exit-slot-for-direction direction))
+					    (make-instance 'exit :dest-room room1))))))))))))

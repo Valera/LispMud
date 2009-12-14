@@ -6,24 +6,18 @@
   "Хэш-таблица, ставит в соответсвие строке команды функцию для её обработки")
 
 (defun command-go-to-direction (direction)
+  "Функции перехода по какому-нибудь направлению делаются каррированием этот функции."
   (assert (member direction *exits*))
-  (let ((next-room (exit (cur-room *thread-vars*) direction)))
-    (if next-room
-	(setf (cur-room *thread-vars*) next-room)
-	(format t "Извините, но вы не можете идти в этом направлении"))))
-
-#+nil
-(defun command-go-to-direction (direction)
-  (assert (member direction *exits*))
-  (let ((next-room (gethash (cons (cur-room *thread-vars*) direction)
-			    (exit-hash (cur-zone *thread-vars*)))))
-    (if next-room
-	(setf (cur-room *thread-vars*) next-room)
-	(format t "Извините, но вы не можете идти в этом направлении"))))
+  (let ((exit (exit *player-room* direction)))
+    (if (exit *player-room* direction)
+	(if (can-pass exit)
+	    (setf *player-room* (dest-room exit))
+	    (format t "К сожалению, проход в эту сторону для тебя закрыт.~%"))
+	(format t "Вы не видите никакого прохода в этом направилении"))))
 
 (defun command-leave ()
   (format t "До свидания, возвращайся быстрей!~%")
-  (setf (end-p *thread-vars*) t))
+  (setf *player-exit-flag* t))
 
 (defun init-command-table ()
   (let ((command-list nil)
@@ -46,9 +40,10 @@
     (setf *command-hash* command-hash)))
 
 (defun exec-command (command-string)
-  (destructuring-bind (command &rest args)
-      (split-sequence #\Space command-string  :remove-empty-subseqs t)
-    (let ((command-fun (gethash command *command-hash*)))
-      (if command-fun
-	  (apply command-fun args)
-	  (format t "Комманда не найдена.~%")))))
+  (let ((command-and-args (split-sequence #\Space command-string  :remove-empty-subseqs t)))
+    (if command-and-args
+	(destructuring-bind (command &rest args) command-and-args
+	  (let ((command-fun (gethash command *command-hash*)))
+	    (if command-fun
+		(apply command-fun args)
+		(format t "Комманда не найдена.~%")))))))

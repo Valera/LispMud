@@ -17,12 +17,9 @@
    +localhost+ +port+
    #'(lambda (stream)
        (let ((*standard-input* stream)
-	     (*standard-output* stream)
-	     #-(and) (*thread-vars* (make-instance 'thread-vars)))
+	     (*standard-output* stream))
 	 ;; FIXME: delete next line.
 	 (setf *player-zone* (first *zone-list*))
-	 ;(format t "~a~%"  (room-list  *player-zone*))
-	 ;(setf *player-room* (first (room-list *player-room*)))
 	 (setf *player-room* (first (entry-rooms *player-zone*)))
 	 (player-loop)
 	 (close stream)))))
@@ -35,13 +32,12 @@
 	  (east-exit *player-room*))
   (force-output))
 
-
 (defun player-loop ()
-  (loop with line
-     until (or (equal :eof (setf line (read-line *standard-input* nil :eof)))
-	        *player-exit-flag*)
-     do (progn
-	  (format t "Line read~%")
-	  (format t "В комнате ~a~%" (description *player-room*))
-	  (prompt)
-	  (exec-command line))))
+  (let (*player-exit-flag*)
+    (loop with line
+       until (or (equal :eof line) *player-exit-flag*)
+       do (progn
+	    (format t "В комнате ~a~%" (description *player-room*))
+	    (prompt)
+	    (setf line (read-line *standard-input* nil :eof))
+	    (exec-command line)))))

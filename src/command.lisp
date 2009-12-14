@@ -13,7 +13,7 @@
 	(if (can-pass exit)
 	    (setf *player-room* (dest-room exit))
 	    (format t "К сожалению, проход в эту сторону для тебя закрыт.~%"))
-	(format t "Вы не видите никакого прохода в этом направилении"))))
+	(format t "Вы не видите никакого прохода в этом направилении~%"))))
 
 (defun command-leave ()
   (format t "До свидания, возвращайся быстрей!~%")
@@ -46,4 +46,5 @@
 	  (let ((command-fun (gethash command *command-hash*)))
 	    (if command-fun
 		(apply command-fun args)
-		(format t "Комманда не найдена.~%")))))))
+		(format t "Комманда не найдена.~%"))))
+	(format t "Ээээ... что?~%"))))

@@ -13,10 +13,10 @@
 (defun reverse-direction (direction)
   "Returns reverse direction; for ex. :north is reverse for :south"
   (ecase direction
-    (south 'north)
-    (north 'south)
-    (west 'east)
-    (east 'west)))
+    (:south :north)
+    (:north :south)
+    (:west :east)
+    (:east :west)))
 
 (defclass myroom ()
   ((short-description :accessor short-description :initform "" :initarg :short-description)
@@ -27,7 +27,7 @@
    (north-exit :accessor north-exit :initform nil :initarg :north-exit)))
 
 (defclass exit ()
-  ((dest-room :accessor dest-room :initarg :accessor)))
+  ((dest-room :accessor dest-room :initarg :dest-room)))
 
 (defgeneric can-pass (exit))
 
@@ -74,7 +74,7 @@
 
 (defun dy-for-direction (direction)
   (ecase direction
-    (:north 1) (:east  0) (:south -1) (:west  0)))
+    (:north -1) (:east  0) (:south 1) (:west  0)))
 
 (defun load-zone2 (filename)
   (with-open-file (stream filename)
@@ -93,20 +93,22 @@
 		      room-description
 		      west-exit east-exit north-exit south-exit)
 	      room
-	    (setf (aref map x y)
+	    (setf (aref map y x)
 		  (make-instance 'myroom :description room-description
 				 :west-exit west-exit :east-exit east-exit
 				 :north-exit north-exit :south-exit south-exit))
-	    (push (aref map x y) entry-rooms)))
+	    (push (aref map y x) entry-rooms)))
 	(link-rooms map)
 	(make-instance 'zone :map-array map :entry-rooms entry-rooms)  ))))
 
 (defun link-rooms (zone-map)
+  (pvalue "link-rooms" zone-map)
+  (pvalue (aref zone-map 0 1))
   (let ((size-x (array-dimension zone-map 0))
 	(size-y (array-dimension zone-map 1)))
     (dotimes (x size-x)
       (dotimes (y size-y)
-	(let ((room (aref zone-map x y)))
+	(let ((room (aref zone-map y x)))
 	  (if room
 	      (dolist (direction *exits*)
 		(let (x1 y1 room1)
@@ -115,9 +117,11 @@
 			      (< 0 x1 x)
 			      (>= (setf y1 (+ (dy-for-direction direction) y)) size-y)
 			      (< 0 y1 y)
-			      (not (setf room1 (aref zone-map x1 y1)))
+			      (not (setf room1 (aref zone-map y1 x1)))
 			      (not (exit room1 (reverse-direction direction))))
-			  (format t "Warning: ~a exit in room (~a, ~a) doen't have pair"
-			      direction x y)
+			  (progn
+			    (pvalue x y x1 y1 room1)
+			    (format t "Warning: ~a exit in room (~a, ~a) doen't have pair~%"
+				    direction x y))
 			  (setf (slot-value room (exit-slot-for-direction direction))
 					    (make-instance 'exit :dest-room room1))))))))))))

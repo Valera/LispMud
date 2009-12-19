@@ -12,6 +12,7 @@
 			(:file "utils" :depends-on ("packages"))
 			(:file "main" :depends-on ("packages" "utils" "command"))
 			(:file "threadvars" :depends-on ("packages" "utils"))
+			(:file "exchange" :depends-on ("packages" "utils"))
 			(:file "bank" :depends-on ("packages" "utils"))
 			(:file "sock" :depends-on ("packages" "utils"))
 			(:file "command" :depends-on ("packages" "utils"))

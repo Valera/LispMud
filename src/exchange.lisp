@@ -11,7 +11,7 @@
 
 (defun add-stock (person item price)
   (with-hash-table-value 
-      item-list person *exchange*
+      (item-list person *exchange*)
     (if (< (length item-list) *max-exchange-items*)
 	(format t (string-join
 		   "Извините, но вы уже выставили на биржу максимальное число лотов." #\Nl
@@ -22,7 +22,7 @@
 
 (defun reset-price (person item new-price)
   (with-hash-table-value 
-       item-list person *exchange*
+       (item-list person *exchange*)
     (let ((item-price (find item item-list :key #'first)))
       (if item-price
 	  (progn
@@ -35,4 +35,3 @@
 (defun stock-info ())
 
 (defun stock-fullinfo ())
-

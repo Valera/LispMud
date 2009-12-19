@@ -29,3 +29,12 @@
   `(progn
      ,@(loop for val in values collecting
 	    `(format t "=debug= ~a => ~s~%" ',val ,val))))
+
+(defmacro with-hash-table-value ((variable key hash-table) &body forms)
+  `(let ((,variable (gethash ,key ,hash-table)))
+     ,@forms
+     (setf (gethash ,key ,hash-table) ,variable)))
+
+(defmacro string-join (&rest strings)
+  "Joins string and characters at compile time"
+  (apply #'concatenate 'string (mapcar #'string strings)))

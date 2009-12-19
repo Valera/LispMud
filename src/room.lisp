@@ -59,6 +59,7 @@
 (defgeneric exit (room direction))
 
 (defun exit-slot-for-direction (direction)
+  "For given direction keyword, returns name of matching exit slot in class room."
   (ecase direction
     (:north 'north-exit)
     (:east  'east-exit)
@@ -66,9 +67,11 @@
     (:west  'west-exit)))
 
 (defmethod exit ((room myroom) direction)
+  "Returns value of exit slot for given direction."
   (slot-value room (exit-slot-for-direction direction)))
 
 (defun dx-for-direction (direction)
+  "Returns shift in X coordinate for moving in direction parameter."
   (ecase direction
     (:north 0) (:east  1) (:south 0) (:west  -1)))
 

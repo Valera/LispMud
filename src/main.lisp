@@ -6,7 +6,7 @@
 (defvar *zone-list* nil)
 
 (defun initialize-game ()
-  (init-command-table)
+  (init-commands)
   (setf *zone-list* (load-world *world-filename*))
   (pvalue *zone-list*))
 
@@ -38,7 +38,7 @@
        with line
        until *player-exit-flag*
        do (progn
-	    (format t "В комнате ~a~%" (description *player-room*))
+	    (format t "В комнате ~a~%" (short-description *player-room*))
 	    (prompt)
 	    (setf line (read-line *standard-input* nil :eof))
 	    (if (eql line :eof)

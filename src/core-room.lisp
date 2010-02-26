@@ -1,13 +1,5 @@
 (in-package :lispmud)
 
-;; FIXME: delete class room1.
-(defclass room1 ()
-  ((south :initarg :south)
-   (north :initarg :north)
-   (west  :initarg :west)
-   (east  :initarg :east)
-   (description :initarg :description :accessor description)))
-
 (defvar *exits* '(:north :east :south :west) "All posible directions for iteration")
 
 (defun reverse-direction (direction)

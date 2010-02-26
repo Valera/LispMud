@@ -2,9 +2,6 @@
 
 (in-package :lispmud)
 
-(defvar *command-hash* (make-hash-table :test 'equal)
-  "Хэш-таблица, ставит в соответсвие строке команды функцию для её обработки")
-
 (defun command-go-to-direction (direction)
   "Функции перехода по какому-нибудь направлению делаются каррированием этот функции."
   (assert (member direction *exits*))
@@ -19,6 +16,14 @@
   (format t "До свидания, возвращайся быстрей!~%")
   (setf *player-exit-flag* t))
 
+(defun command-look ()
+  "комманда, печатающая которкие описания выходов"
+  (dolist (direction *exits*)
+    (if (exit *player-room* direction)
+	(format t "  ~a~t: ~a~%"
+		(case direction (:north "cевер") (:east "восток") (:south "юг") (:west "запад"))
+		(short-description (dest-room (exit *player-room* direction)))))))
+
 (defun command-exits ()
   "комманда, печатающая список выходов из комнаты"
   (let 
@@ -28,42 +33,13 @@
 				(if (east-exit *player-room*) "восток" nil)))))
     (format t "Вы видите выходы на ~{~a~^, ~}.~%" exits)))
 
-(defun command-look ()
-  "комманда, печатающая которкие описания выходов"
-  (dolist (direction *exits*)
-    (if (exit *player-room* direction)
-	(format t "  ~a~t: ~a~%"
-		(case direction (:north "cевер") (:east "восток") (:south "юг") (:west "запад"))
-		(short-description (dest-room (exit *player-room* direction)))))))
-
-(defun init-command-table ()
-  (let ((command-list nil)
-	(command-hash (make-hash-table :test 'equal)))
-    (flet ((add-command (string fun) (push (list string fun) command-list)))
-      (add-command "эхо"  #'(lambda (&rest args) (format t "~{|~a| ~}~%" args)))
-      (add-command "ю" #'(lambda () (command-go-to-direction :south)))
-      (add-command "с" #'(lambda () (command-go-to-direction :north)))
-      (add-command "з" #'(lambda () (command-go-to-direction :west)))
-      (add-command "в" #'(lambda () (command-go-to-direction :east)))
-      (add-command "выходы" 'command-exits)
-      (add-command "оглядеться" 'command-look)
-      (add-command "конец"  'command-leave))
-    (setf command-list (nreverse command-list))
-    (dolist (i command-list)
-      (let ((i-str (first i))
-	    (i-fun (second i)))
-	(dotimes (j (length i-str))
-	  (let ((substr (subseq i-str 0 (1+ j))))
-	    (unless (gethash substr command-hash)
-		   (setf (gethash substr command-hash) i-fun))))))
-    (setf *command-hash* command-hash)))
-
-(defun exec-command (command-string)
-  (let ((command-and-args (split-sequence #\Space command-string  :remove-empty-subseqs t)))
-    (if command-and-args
-	(destructuring-bind (command &rest args) command-and-args
-	  (let ((command-fun (gethash command *command-hash*)))
-	    (if command-fun
-		(apply command-fun args)
-		(format t "Комманда не найдена.~%"))))
-	(format t "Ээээ... что?~%"))))
+(defun init-commands ()
+  (init-command-table
+   `(("эхо"  ,#'(lambda (&rest args) (format t "~{|~a| ~}~%" args)))
+     ("ю" ,#'(lambda () (command-go-to-direction :south)))
+     ("с" ,#'(lambda () (command-go-to-direction :north)))
+     ("з" ,#'(lambda () (command-go-to-direction :west)))
+     ("в" ,#'(lambda () (command-go-to-direction :east)))
+     ("выходы" ,'command-exits)
+     ("оглядеться" ,'command-look)
+     ("конец"  ,'command-leave))))

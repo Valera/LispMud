@@ -66,7 +66,11 @@
 	     (force-output inner-stream)
 	     (setf cols 0))
       (progn (incf cols)
-	     (write-char char inner-stream)))))
+	     (write-char char inner-stream)
+             ;; FIXME работа с буквой "Я".
+	     (when (member char '(#\я #\Я))
+	       (incf cols)
+	        (write-char char inner-stream))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

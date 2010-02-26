@@ -19,6 +19,23 @@
   (format t "До свидания, возвращайся быстрей!~%")
   (setf *player-exit-flag* t))
 
+(defun command-exits ()
+  "комманда, печатающая список выходов из комнаты"
+  (let 
+      ((exits (remove nil (list (if (north-exit *player-room*) "север" nil)
+				(if (south-exit *player-room*) "юг" nil)
+				(if (west-exit *player-room*) "запад" nil)
+				(if (east-exit *player-room*) "восток" nil)))))
+    (format t "Вы видите выходы на ~{~a~^, ~}.~%" exits)))
+
+(defun command-look ()
+  "комманда, печатающая которкие описания выходов"
+  (dolist (direction *exits*)
+    (if (exit *player-room* direction)
+	(format t "  ~a~t: ~a~%"
+		(case direction (:north "cевер") (:east "восток") (:south "юг") (:west "запад"))
+		(short-description (dest-room (exit *player-room* direction)))))))
+
 (defun init-command-table ()
   (let ((command-list nil)
 	(command-hash (make-hash-table :test 'equal)))
@@ -28,7 +45,9 @@
       (add-command "с" #'(lambda () (command-go-to-direction :north)))
       (add-command "з" #'(lambda () (command-go-to-direction :west)))
       (add-command "в" #'(lambda () (command-go-to-direction :east)))
-      (add-command "конец" #'command-leave))
+      (add-command "выходы" 'command-exits)
+      (add-command "оглядеться" 'command-look)
+      (add-command "конец"  'command-leave))
     (setf command-list (nreverse command-list))
     (dolist (i command-list)
       (let ((i-str (first i))

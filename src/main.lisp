@@ -34,10 +34,13 @@
 
 (defun player-loop ()
   (let (*player-exit-flag*)
-    (loop with line
-       until (or (equal :eof line) *player-exit-flag*)
+    (loop named player-repl
+       with line
+       until *player-exit-flag*
        do (progn
 	    (format t "В комнате ~a~%" (description *player-room*))
 	    (prompt)
 	    (setf line (read-line *standard-input* nil :eof))
+	    (if (eql line :eof)
+		(return-from player-repl))
 	    (exec-command line)))))

@@ -15,7 +15,7 @@
 			(:file "exchange" :depends-on ("packages" "utils"))
 			(:file "bank" :depends-on ("packages" "utils"))
 			(:file "sock" :depends-on ("packages" "utils"))
-			(:file "command" :depends-on ("packages" "utils"))
+			(:file "command" :depends-on ("packages" "utils" "threadvars"))
 			(:file "roll" :depends-on ("packages" "utils"))
 			(:file "room" :depends-on ("packages" "utils"))
 			(:file "zone" :depends-on ("packages" "utils"))

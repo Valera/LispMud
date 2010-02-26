@@ -82,10 +82,10 @@
 (defun load-zone2 (filename)
   (with-open-file (stream filename)
     (destructuring-bind
-	  (&key zone-description zone-rooms zone-mobs
+	  (&key zone-name zone-rooms zone-mobs
 		((:zone-size (size-x size-y))))
 	(read stream)
-      (pvalue zone-description zone-rooms zone-mobs
+      (pvalue zone-name zone-rooms zone-mobs
 	      (list size-x size-y))
       (let ((map (make-array (list size-x size-y) :initial-element nil))
 	    (entry-rooms nil))
@@ -93,11 +93,12 @@
 	  (pvalue room)
 	  (destructuring-bind
 		(&key ((:coord (x y)))
-		      room-description
+		      room-short-description room-long-description room-flags room-type
 		      west-exit east-exit north-exit south-exit)
 	      room
 	    (setf (aref map y x)
-		  (make-instance 'myroom :description room-description
+		  (make-instance 'myroom :short-description room-short-description
+				 :description room-long-description
 				 :west-exit west-exit :east-exit east-exit
 				 :north-exit north-exit :south-exit south-exit))
 	    (push (aref map y x) entry-rooms)))
@@ -106,7 +107,6 @@
 
 (defun link-rooms (zone-map)
   (pvalue "link-rooms" zone-map)
-  (pvalue (aref zone-map 0 1))
   (let ((size-x (array-dimension zone-map 0))
 	(size-y (array-dimension zone-map 1)))
     (dotimes (x size-x)
@@ -117,14 +117,16 @@
 		(let (x1 y1 room1)
 		  (if (exit room direction)
 		      (if (or (>= (setf x1 (+ (dx-for-direction direction) x)) size-x)
-			      (< 0 x1 x)
+			      (> 0 x1); x)
 			      (>= (setf y1 (+ (dy-for-direction direction) y)) size-y)
-			      (< 0 y1 y)
+			      (> 0 y1); y)
 			      (not (setf room1 (aref zone-map y1 x1)))
 			      (not (exit room1 (reverse-direction direction))))
 			  (progn
 			    (pvalue x y x1 y1 room1)
 			    (format t "Warning: ~a exit in room (~a, ~a) doen't have pair~%"
 				    direction x y))
-			  (setf (slot-value room (exit-slot-for-direction direction))
-					    (make-instance 'exit :dest-room room1))))))))))))
+			  (progn
+			    ;(pvalue x y x1 y1 room1)
+			    (setf (slot-value room (exit-slot-for-direction direction))
+				  (make-instance 'exit :dest-room room1)))))))))))))

@@ -33,6 +33,17 @@
 				(if (east-exit *player-room*) "восток" nil)))))
     (format t "Вы видите выходы на ~{~a~^, ~}.~%" exits)))
 
+(defun command-map ()
+  (iter (with map = (map-array *player-zone*))
+	(for y from 0 below (array-dimension map 0))
+	(iter (for x from 0 below (array-dimension map 1))
+	      (if (aref map y x)
+		  (if (eql *player-room* (aref map y x))
+		      (format t "@")
+		      (format t "x"))
+		  (format t "-")))
+	(format t "~%")))
+
 (defun init-commands ()
   (init-command-table
    `(("эхо"  ,#'(lambda (&rest args) (format t "~{|~a| ~}~%" args)))
@@ -42,4 +53,5 @@
      ("в" ,#'(lambda () (command-go-to-direction :east)))
      ("выходы" ,'command-exits)
      ("оглядеться" ,'command-look)
+     ("карта" ,'command-map)
      ("конец"  ,'command-leave))))

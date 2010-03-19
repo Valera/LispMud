@@ -3,7 +3,8 @@
 (defvar +localhost+ #(0 0 0 0))
 (defvar +port+ 8000)
 (defvar *world-filename* "world.lmud")
-(defvar *zone-list* nil)
+(defvar *zone-list*)
+(defvar *player-output*)
 
 (defun initialize-game ()
   (init-commands)
@@ -16,11 +17,13 @@
   (start-telnet-server
    +localhost+ +port+
    #'(lambda (stream)
-       (let ((*standard-input* stream)
-	     (*standard-output* stream))
+       (let* ((*standard-input* stream)
+	     (*standard-output* stream)
+	     (*player-output* nil)
 	 ;; FIXME: delete next line.
-	 (setf *player-zone* (first *zone-list*))
-	 (setf *player-room* (first (entry-rooms *player-zone*)))
+	     (*player-zone* (first *zone-list*))
+	     (*player-room* (first (entry-rooms *player-zone*))))
+	 (temp-start-work *player-zone*)
 	 (player-loop)
 	 (close stream)))))
 
@@ -38,8 +41,9 @@
        with line
        until *player-exit-flag*
        do (progn
-	    (format t "В комнате ~a~%" (short-description *player-room*))
+	    (room-about *player-room*)
 	    (prompt)
+;;	    (pvalue (read-char-no-hang *standard-input* nil :eof))
 	    (setf line (read-line *standard-input* nil :eof))
 	    (if (eql line :eof)
 		(return-from player-repl))

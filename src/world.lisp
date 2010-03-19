@@ -10,7 +10,7 @@
     (let ((zones (iter
 		   (for zone-filename in (read stream))
 		   (pvalue zone-filename)
-		   (collect (load-zone2 zone-filename)))))
+		   (collect (load-zone zone-filename)))))
       (link-zones zones))))
 
 (defun link-zones (zone-list)

@@ -38,3 +38,14 @@
 (defmacro string-join (&rest strings)
   "Joins string and characters at compile time"
   (apply #'concatenate 'string (mapcar #'string strings)))
+
+(defmacro-clause (FOR var IN-MATRIX m)
+  "All the elements of a vector (disregards fill-pointer)"
+  (with-unique-names (matr index lX lY x y)
+    `(progn
+       (with ,matr = ,m)
+       (with ,lY = (array-dimension ,matr 1))
+       (with ,lX = (array-dimension ,matr 0))
+       (for ,index from 0 below (* ,LY ,LX))
+       (for ,var = (multiple-value-bind (,y ,x) (floor ,index ,lX)
+		     (list ,y ,x (aref ,matr ,y ,x)))))))

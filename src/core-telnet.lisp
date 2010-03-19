@@ -28,6 +28,20 @@
 		     #\Return)))
 	    c))))
 
+(defmethod stream-read-char-no-hang ((stream telnet-input-stream))
+  (let ((c (read-char-no-hang (stream-of stream) nil :eof)))
+    (when c
+      (if (eq c :eof)
+	  :eof
+	  (if (char= c #\Return)
+	      (let ((c2 (read-char (stream-of stream) nil :eof)))
+		(if (char= c2 #\Newline)
+		    #\Newline
+		    (progn (unread-char c2 (stream-of stream))
+			   #\Return)))
+	      c)))))
+
+
 (defmethod stream-unread-char ((stream telnet-input-stream)
 			       char)
   (unread-char char (stream-of stream)))

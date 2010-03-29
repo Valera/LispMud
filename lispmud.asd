@@ -7,7 +7,8 @@
  
 (defsystem :lispmud
   :serial t
-  :depends-on (:split-sequence :alexandria :iterate)
+  :depends-on (:split-sequence :alexandria :iterate :sb-queue 
+			       :bordeaux-threads :usocket)
   :components ((:module "src"
 			:serial t
 			:components ((:file "packages" )
@@ -20,6 +21,7 @@
 				     (:file "core-zone")
 				     (:file "core-telnet")
 				     ;; content
+				     (:file "mob")
 				     (:file "main")
 				     (:file "exchange")
 				     (:file "bank")

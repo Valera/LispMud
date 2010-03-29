@@ -3,18 +3,18 @@
 (in-package :lispmud)
 
 (defvar *mail-queue* () )
-(defvar *mail-queue-mutex* (make-mutex :name "Mail system mutex"))
+(defvar *mail-queue-lock* (make-lock "Mail system lock"))
 
 (defun send-mail (from-hero to-hero message)
-  (with-recursive-lock (*mail-queue-mutex*)
+  (bt:with-recursive-lock-held (*mail-queue-lock*)
     (push (list from-hero to-hero message) *mail-queue*)))
 
 (defun recv-mail (receiver-hero)
-  (with-recursive-lock (*mail-queue-mutex*)
+  (bt:with-recursive-lock-held (*mail-queue-lock*)
     (remove-if-not #'(lambda (recv) (string= recv receiver-hero))
 		   *mail-queue* :key #'second)
     (delete-if #'(lambda (recv) (string= recv receiver-hero)) *mail-queue*)))
 
 (defun check-mail (receiver-name)
-  (with-recursive-lock (*mail-queue-mutex*)
+  (bt:with-recursive-lock-held (*mail-queue-lock*)
     (not (null (position receiver-name *mail-queue* :key #'second)))))

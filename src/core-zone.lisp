@@ -11,14 +11,14 @@
    (mobs-spec :accessor mobs-spec :initarg :mobs-spec)
    (mobs-counters :accessor mobs-counters)
    (mobs-max-numbers :accessor mobs-max-numbers)
-   (zmutex :accessor zmutex)
+   (lock :accessor lock)
    (message-queue :accessor message-queue :initform nil)))
 
 (defmethod initialize-instance :after ((zone zone) &rest initargs)
   (declare (ignore initargs))
   (setf (slot-value zone 'id) *zone-id-source*)
   (incf *zone-id-source*)
-  (setf (zmutex zone) (make-mutex :name (concatenate 'string "Zone mutex: " (name zone)))))
+  (setf (lock zone) (make-lock (concatenate 'string "Zone mutex: " (name zone)))))
 
 (defgeneric queue-mesg (zone mesg-type arguments &key timeout))
 (defmethod queue-mesg ((zone zone) mesg-type arguments &key timeout)
@@ -26,23 +26,21 @@
       (schedule-timer (make-timer #'(lambda ()
 				      (queue-mesg zone mesg-type arguments)))
 		      2)
-      (with-mutex ((zmutex zone))
-	(append (message-queue zone) (list mesg-type arguments)))))
+      (enqueue (list mesg-type arguments) (message-queue zone))))
 
 (defgeneric get-mesg (zone))
 (defmethod get-mesg ((zone zone))
-  (iter (while t)
-	(with-mutex ((zmutex zone))
-	  (if (message-queue zone)
-	      (return (pop (message-queue zone)))))))
+  (dequeue (message-queue zone)))
 
-#|
-(defgeneric process-messages (zone))
-(defmethod prcess-messages ((zone zone))
-  (iter (with mesg
-	      (while t)
-	(get-mesg zone)
-|#
+(defgeneric event-loop (zone))
+(defmethod event-loop ((zone zone))
+  (iter
+    (repeat 200)
+    (queue-mesg zone :mob-activity ()))
+  (iter
+    (for message = (get-mesg zone))
+    (case message
+      (:mob-activity ()))))
 
 (defun load-zone (filename)
   (with-open-file (stream filename)

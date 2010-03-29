@@ -40,7 +40,7 @@
 ;; Сделать что-нибудь, чтобы казаться настоящим.
 (defgeneric activity (mob))
 (defmethod activity :after ((mob mob))
-  (queue-mesg (zone mob) :mob-activity (list 'activity) :timeout 20))
+  (queue-mesg (zone mob) :mob-activity (list 'activity) :timeout 2))
 
 ;; (defmethod initialize-instance
 (defmethod initialize-instance :after ((mob mob) &rest initargs)

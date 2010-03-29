@@ -7,7 +7,7 @@
 
 (defvar *exchange* (make-hash-table :test 'equal))
 
-(defvar *exchange-mutex* (make-mutex :name "Exchange mutex"))
+(defvar *exchange-lock* (make-lock "Exchange"))
 
 (defun add-stock (person item price)
   (with-hash-table-value 

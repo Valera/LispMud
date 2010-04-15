@@ -22,11 +22,14 @@
 	    (handle-client-connect new))
 	  ;; ELSE: data from a connected client
 	  (handle-client-input s))))))
-;(defparameter *serv*
-;	   (make-instance 'server))
-;(defvar *master-socket*
-;	   (socket-listen "localhost" 3001 :element-type 'unsigned-byte))
-;(provider-thread *serv* *master-socket*)
+#+nil
+(defparameter *serv*
+  (make-instance 'server))
+#+nil
+(defvar *master-socket*
+  (socket-listen "localhost" 3001 :element-type 'unsigned-byte))
+#+nil
+(provider-thread *serv* *master-socket*)
 
 (defparameter *out* (make-array 1000 :fill-pointer 0 :element-type 'character))
 
@@ -56,7 +59,7 @@
   (bt:with-lock-held ((server-workers-mutex server))
     (push (bt:make-thread #'(lambda () (worker-thread server))) (server-workers server))))
 
-(defun collect-input (socket buffer &optional (end-char 13))
+(defun collect-input (socket buffer &optional (end-byte 10))
   (loop
      :with stream = (socket-stream socket)
      :with byte
@@ -67,8 +70,8 @@
      ;(force-output (socket-stream socket))
      ;(print (peek-char nil (socket-stream socket)))
      (setq byte (read-byte stream))
-     (format t "collect-input: read-byte ~a~%" byte)
-     (when (= byte end-char)
+     (format t "collect-input: read-byte ~s~%" byte)
+     (when (= byte end-byte)
        (return t))
      (vector-push-extend byte buffer)))
 
@@ -139,7 +142,7 @@
                         (progn
                           (bt:with-lock-held (connlock)
                             (unless (null (slot-value s 'usocket::state))
-                              (let ((new (socket-accept s)))
+                              (let ((new (socket-accept s :element-type '(unsigned-byte 8))))
                                 (setf sockets (push new sockets))
                                 (handle-client-connect server new)))))
                         ;; ELSE: client socket
@@ -155,6 +158,6 @@
                   (end-of-file ()
                     ;; not sure we ever get here
                     ))))
-        (shutting-down ()
+       #+nil (shutting-down ()
           ;; anything to do here?
           )))))

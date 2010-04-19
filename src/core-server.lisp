@@ -3,26 +3,6 @@
 (in-package :lispmud)
 
 #+nil
-(defun listener-loop (host port)
-  (let* ((master-socket
-	  (usocket:socket-listen host port
-				 :reuse-address t
-				 :element-type 'unsigned-byte))
-	 (sockets (list master-socket)))
-    ;; see below for the :ready-only description
-    (iter
-     ;; infinite loop
-     (iter
-      (for s in (wait-for-input sockets :ready-only t))
-      (if (eq s master-socket)
-	  ;; THEN: new connection
-	  (let ((new (usocket:socket-accept s)))
-	    ;; add the new socket to the list of sockets that we're listening to
-	    (setf sockets (nconc sockets `(,new)))
-	    (handle-client-connect new))
-	  ;; ELSE: data from a connected client
-	  (handle-client-input s))))))
-#+nil
 (defparameter *serv*
   (make-instance 'server))
 #+nil
@@ -30,30 +10,6 @@
   (socket-listen "localhost" 3001 :element-type 'unsigned-byte))
 #+nil
 (provider-thread *serv* *master-socket*)
-
-(defparameter *out* (make-array 1000 :fill-pointer 0 :element-type 'character))
-
-(defun client-on-command (client input)
-  (with-output-to-string (stream *out*)
-    (format stream "client-on-command: ~a ~s~%" client input)))
-
-(defun handle-client-connect (server new-socket)
-  (format t "connect: ~a ~a~%" server new-socket)
-
-;  (write-byte 48 (socket-stream new-socket))
-;  (force-output  (socket-stream new-socket))
-
-  (let ((telnet-stream (make-instance 'telnet-byte-output-stream :stream (socket-stream new-socket))))
-    (write-line "Привет, мир!" telnet-stream)
-#+nil    (force-output telnet-stream))
-
-  (setf (gethash new-socket (connections server)) (make-instance 'client)))
-
-(defun handle-client-disconnect (server s)
-  (format t "disconnect: ~a ~a~%" server s))
-
-(defclass client ()
-  ((buffer :accessor client-buffer :initform (make-array 200 :fill-pointer 0 :element-type '(unsigned-byte 8)))))
 
 (defclass server ()
   ((cmdqueue-sem :initform (sb-thread:make-semaphore))
@@ -63,39 +19,41 @@
    (connections-mutex :accessor server-connections-mutex :initform (bt:make-lock))
    (connections :accessor connections :initform (make-hash-table))))
 
-(defun add-worker (server)
-  (bt:with-lock-held ((server-workers-mutex server))
-    (push (bt:make-thread #'(lambda () (worker-thread server))) (server-workers server))))
+;; Declarations of client class interface
 
-(defun collect-input (socket buffer &optional (end-byte 10))
-  (loop
-     :with stream = (socket-stream socket)
-     :with byte
-     :while (listen stream)
-     :doing
-     (format t "collect-input: listened")
-     ;(format (socket-stream socket) "Hello there~%")   ;; output into buffers
-     ;(force-output (socket-stream socket))
-     ;(print (peek-char nil (socket-stream socket)))
-     (setq byte (read-byte stream))
-     (format t "collect-input: read-byte ~s~%" byte)
-     (when (= byte end-byte)
-       (return t))
-     (vector-push-extend byte buffer)))
-
-(defun reset-buffer (client)
-  (setf (fill-pointer (client-buffer client)) 0))
-
+(defgeneric client-on-command (client input)
+  (:documentation "Curried with data read with client read and enqueued in thread pool queue."))
 (defgeneric client-read (client socket)
-  (:method ((client client) socket)
-    (format t "client-read ~s ~s~%" client socket)
-    (with-slots (buffer) client
-      (when (collect-input socket buffer)
-        (prog1
-            (octets-to-string buffer); :external-format :cp1251)
-          (reset-buffer client))))))
+  (:documentation "Called when data is available in socket"))
+
+;; Server implementation.
+
+(defgeneric handle-client-connect (server new-socket)
+  (:documentation "Called with new new connection 'new-socket'. Creates client.")
+  (:method ((server server) new-socket)
+    (format t "connect: ~a ~a~%" server new-socket)
+					;  (write-byte 48 (socket-stream new-socket))
+					;  (force-output  (socket-stream new-socket))
+    (let ((telnet-stream (make-instance 'telnet-byte-output-stream :stream (socket-stream new-socket))))
+      (write-line "Привет, мир!" telnet-stream)
+      #+nil    (force-output telnet-stream))
+    (setf (gethash new-socket (connections server)) (make-instance 'client))))
+
+(defgeneric handle-client-disconnect (server socket)
+  (:documentation "Called on client disconnect, removes client from client hash.")
+  (:method ((server server) socket)
+    (remhash socket (connections server))
+    (format t "disconnect: ~a ~a~%" server socket)))
+
+(defgeneric add-worker (server &optional n)
+  (:documentation "Adds 'n' workers to thread pool.")
+  (:method ((server server) &optional n)
+    (bt:with-lock-held ((server-workers-mutex server))
+      (dotimes (count n)
+	(push (bt:make-thread #'(lambda () (worker-thread server))) (server-workers server))))))
 
 (defgeneric handle-client-input (server socket)
+  (:documentation "Called from event loop when data is available in socket")
   (:method ((server server) socket)
     (format t "handle-client-input ~s ~s~%" server socket)
     (with-slots (connections) server
@@ -103,11 +61,8 @@
 	     (input (client-read client socket)))
 	(send-to-workers server (curry #'client-on-command client input))))))
 
-;;(defun curry (fun &rest args1)
-;;  (lambda (&rest args2)
-;;    (apply fun (append args1 args2))))
-
 (defgeneric worker-thread (server)
+  (:documentation "Working function for launching new thread. Processes input queue.")
   (:method ((server server))
     (handler-case
         (with-slots (cmdqueue-sem cmdqueue) server
@@ -127,17 +82,18 @@
         ))))
 
 (defgeneric send-to-workers (server event)
+  (:documentation "Enqueues event to server queue.")
   (:method ((server server) event)
     (with-slots (cmdqueue-sem cmdqueue) server
       (sb-queue:enqueue event cmdqueue)
       (sb-thread:signal-semaphore cmdqueue-sem))))
-
 
 ;;(bt:interrupt-thread *listener-thread*
 ;;  #'(lambda () (signal 'shutting-down)))
 ;;(bt:join-thread *listener-thread*)
 
 (defgeneric provider-thread (server master-socket)
+  (:documentation "Main server loop, waits for input on 'master-sockets' and dispatches data.")
   (:method ((server server) master-socket)
     (let ((sockets (list master-socket))
           (connlock (server-connections-mutex server)))
@@ -166,6 +122,46 @@
                   (end-of-file ()
                     ;; not sure we ever get here
                     ))))
-       #+nil (shutting-down ()
-          ;; anything to do here?
-          )))))
+	#+nil (shutting-down ()
+		;; anything to do here?
+		)))))
+
+;; ================== Basic client implementation ==================
+
+;; Client class.
+(defclass client ()
+  ((buffer :accessor client-buffer :initform (make-array 200 :fill-pointer 0 :element-type '(unsigned-byte 8)))))
+
+;; Temporary *out* string for setting it as *standard-output*
+(defparameter *out* (make-array 1000 :fill-pointer 0 :element-type 'character))
+
+(defmethod client-on-command ((client client) input)
+  (with-output-to-string (stream *out*)
+    (format stream "client-on-command: ~a ~s~%" client input)))
+
+(defun collect-input (socket buffer &optional (end-byte 10))
+  (loop
+     :with stream = (socket-stream socket)
+     :with byte
+     :while (listen stream)
+     :doing
+     (format t "collect-input: listened")
+     ;(format (socket-stream socket) "Hello there~%")   ;; output into buffers
+     ;(force-output (socket-stream socket))
+     ;(print (peek-char nil (socket-stream socket)))
+     (setq byte (read-byte stream))
+     (format t "collect-input: read-byte ~s~%" byte)
+     (when (= byte end-byte)
+       (return t))
+     (vector-push-extend byte buffer)))
+
+(defun reset-buffer (client)
+  (setf (fill-pointer (client-buffer client)) 0))
+
+(defmethod client-read ((client client) socket)
+  (format t "client-read ~s ~s~%" client socket)
+  (with-slots (buffer) client
+    (when (collect-input socket buffer)
+      (prog1
+	  (octets-to-string buffer)	; :external-format :cp1251)
+	(reset-buffer client)))))

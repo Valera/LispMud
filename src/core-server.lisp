@@ -37,9 +37,17 @@
   (with-output-to-string (stream *out*)
     (format stream "client-on-command: ~a ~s~%" client input)))
 
-(defun handle-client-connect (server new)
-  (format t "connect: ~a ~a~%" server new)
-  (setf (gethash new (connections server)) (make-instance 'client)))
+(defun handle-client-connect (server new-socket)
+  (format t "connect: ~a ~a~%" server new-socket)
+
+;  (write-byte 48 (socket-stream new-socket))
+;  (force-output  (socket-stream new-socket))
+
+  (let ((telnet-stream (make-instance 'telnet-byte-output-stream :stream (socket-stream new-socket))))
+    (write-line "Привет, мир!" telnet-stream)
+#+nil    (force-output telnet-stream))
+
+  (setf (gethash new-socket (connections server)) (make-instance 'client)))
 
 (defun handle-client-disconnect (server s)
   (format t "disconnect: ~a ~a~%" server s))

@@ -2,15 +2,6 @@
 
 (in-package :lispmud)
 
-#+nil
-(defparameter *serv*
-  (make-instance 'server))
-#+nil
-(defvar *master-socket*
-  (socket-listen "localhost" 3001 :element-type 'unsigned-byte))
-#+nil
-(provider-thread *serv* *master-socket*)
-
 (defclass server ()
   ((cmdqueue-sem :initform (sb-thread:make-semaphore))
    (cmdqueue :initform (sb-queue:make-queue))
@@ -36,6 +27,7 @@
 					;  (force-output  (socket-stream new-socket))
     (let ((telnet-stream (make-instance 'telnet-byte-output-stream :stream (socket-stream new-socket))))
       (write-line "Привет, мир!" telnet-stream)
+      (write-line "Привет, я сервер!" telnet-stream)
       #+nil    (force-output telnet-stream))
     (setf (gethash new-socket (connections server)) (make-instance 'client))))
 
@@ -43,7 +35,8 @@
   (:documentation "Called on client disconnect, removes client from client hash.")
   (:method ((server server) socket)
     (remhash socket (connections server))
-    (format t "disconnect: ~a ~a~%" server socket)))
+    (format t "disconnect: ~a ~a~%" server socket)
+    (socket-close socket)))
 
 (defgeneric add-worker (server &optional n)
   (:documentation "Adds 'n' workers to thread pool.")
@@ -125,6 +118,14 @@
 	#+nil (shutting-down ()
 		;; anything to do here?
 		)))))
+
+(defun run-lispmud (port)
+  (let ((serv (make-instance 'server))
+	(master-socket (socket-listen "localhost" port :element-type 'unsigned-byte)))
+    (unwind-protect
+	 (provider-thread serv master-socket)
+      (socket-close master-socket))))
+
 
 ;; ================== Basic client implementation ==================
 

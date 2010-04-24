@@ -67,10 +67,13 @@
       (if positions
 	  ;; then: печать кусочков строки, печатая вместо буквы "я" "яя".
 	  ;; Хак для правильной обработки телнетом этой буквы.
-	  (iter (for (start . end) in (neigbours-list positions))
-		(if-first-time
-		 (progn)
-		 (write-sequence *ya-bytes* inner-stream))
-		(send-string buffer inner-stream :start start :end end))
+	  (let ((otrezki  (neigbours-list (append `(,start) positions `(,end)))))
+	    (iter (for (start . end) in otrezki)
+		  (if-first-time
+		   (progn)
+		   (progn (write-sequence *ya-bytes* inner-stream)
+			  (incf start)))
+		  (send-string string inner-stream :start start :end end)))
 	  ;; else: букв я в строке нет, посылаем её целиком.
 	  (send-string string inner-stream :start start :end end)))))
+

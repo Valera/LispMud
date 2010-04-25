@@ -20,6 +20,8 @@
 				     (:file "core-room")
 				     (:file "core-zone")
 				     (:file "core-telnet")
+				     (:file "core-streams")
+				     (:file "core-server")
 				     ;; content
 				     (:file "mob")
 				     (:file "main")

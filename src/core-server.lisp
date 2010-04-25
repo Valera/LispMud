@@ -12,7 +12,7 @@
 
 ;; Declarations of client class interface
 
-(defgeneric client-on-command (client input)
+(defgeneric client-on-command (client socket input)
   (:documentation "Curried with data read with client read and enqueued in thread pool queue."))
 (defgeneric client-read (client socket)
   (:documentation "Called when data is available in socket"))
@@ -23,13 +23,7 @@
   (:documentation "Called with new new connection 'new-socket'. Creates client.")
   (:method ((server server) new-socket)
     (format t "connect: ~a ~a~%" server new-socket)
-					;  (write-byte 48 (socket-stream new-socket))
-					;  (force-output  (socket-stream new-socket))
-    (let ((telnet-stream (make-instance 'telnet-byte-output-stream :stream (socket-stream new-socket))))
-      (write-line "Привет, мир!" telnet-stream)
-      (write-line "Привет, я сервер!" telnet-stream)
-      #+nil    (force-output telnet-stream))
-    (setf (gethash new-socket (connections server)) (make-instance 'client))))
+    (setf (gethash new-socket (connections server)) (make-instance 'client :socket new-socket))))
 
 (defgeneric handle-client-disconnect (server socket)
   (:documentation "Called on client disconnect, removes client from client hash.")
@@ -52,7 +46,8 @@
     (with-slots (connections) server
       (let* ((client (gethash socket connections))
 	     (input (client-read client socket)))
-	(send-to-workers server (curry #'client-on-command client input))))))
+	(when input
+	  (send-to-workers server (curry #'client-on-command client socket input)))))))
 
 (defgeneric worker-thread (server)
   (:documentation "Working function for launching new thread. Processes input queue.")
@@ -119,11 +114,13 @@
 		;; anything to do here?
 		)))))
 
-(defun run-lispmud (port)
+(defun run-lispmud (port &key (host "localhost") (n-thread 1))
   (let ((serv (make-instance 'server))
-	(master-socket (socket-listen "localhost" port :element-type 'unsigned-byte)))
+	(master-socket (socket-listen host port :element-type 'unsigned-byte)))
     (unwind-protect
-	 (provider-thread serv master-socket)
+	 (progn
+	   (add-worker serv n-thread)
+	   (provider-thread serv master-socket))
       (socket-close master-socket))))
 
 
@@ -131,22 +128,33 @@
 
 ;; Client class.
 (defclass client ()
-  ((buffer :accessor client-buffer :initform (make-array 200 :fill-pointer 0 :element-type '(unsigned-byte 8)))))
+  ((socket :accessor socket :initarg :socket)
+   (out-stream :accessor out-stream)
+   (buffer :accessor client-buffer :initform (make-array 200 :fill-pointer 0 :element-type '(unsigned-byte 8)))))
+
+(defmethod initialize-instance :after ((client client) &key &allow-other-keys)
+  (setf (out-stream client)
+	(make-instance 'telnet-byte-output-stream :stream (socket-stream (socket client))))
+  (write-line "Привет, мир!" (out-stream client))
+  (write-line "Привет, я сервер!" (out-stream client)))
 
 ;; Temporary *out* string for setting it as *standard-output*
 (defparameter *out* (make-array 1000 :fill-pointer 0 :element-type 'character))
 
-(defmethod client-on-command ((client client) input)
+(defmethod client-on-command ((client client) socket input)
   (with-output-to-string (stream *out*)
-    (format stream "client-on-command: ~a ~s~%" client input)))
+    (format stream "client-on-command: ~a ~a ~s~%" client socket input))
+;#+nil
+  (format (out-stream client) "Echo: ~a~%" input))
 
 (defun collect-input (socket buffer &optional (end-byte 10))
   (loop
      :with stream = (socket-stream socket)
      :with byte
+     :with prev-byte = -1
      :while (listen stream)
      :doing
-     (format t "collect-input: listened")
+     (format t "collect-input: listened; ")
      ;(format (socket-stream socket) "Hello there~%")   ;; output into buffers
      ;(force-output (socket-stream socket))
      ;(print (peek-char nil (socket-stream socket)))
@@ -154,7 +162,9 @@
      (format t "collect-input: read-byte ~s~%" byte)
      (when (= byte end-byte)
        (return t))
-     (vector-push-extend byte buffer)))
+     (when (not (and (= byte 255) (= byte prev-byte)))
+       (vector-push-extend byte buffer))
+     (setf prev-byte byte)))
 
 (defun reset-buffer (client)
   (setf (fill-pointer (client-buffer client)) 0))
@@ -164,5 +174,5 @@
   (with-slots (buffer) client
     (when (collect-input socket buffer)
       (prog1
-	  (octets-to-string buffer)	; :external-format :cp1251)
+	  (octets-to-string buffer :external-format :cp1251)
 	(reset-buffer client)))))

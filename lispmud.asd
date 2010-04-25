@@ -19,7 +19,7 @@
 				     (:file "core-dialogs")
 				     (:file "core-room")
 				     (:file "core-zone")
-				     (:file "core-telnet")
+;				     (:file "core-telnet")
 				     (:file "core-streams")
 				     (:file "core-server")
 				     ;; content

@@ -130,22 +130,32 @@
 (defclass client ()
   ((socket :accessor socket :initarg :socket)
    (out-stream :accessor out-stream)
-   (buffer :accessor client-buffer :initform (make-array 200 :fill-pointer 0 :element-type '(unsigned-byte 8)))))
+   (buffer :accessor client-buffer :initform (make-array 200 :fill-pointer 0 :element-type '(unsigned-byte 8)))
+   (globvars :accessor globvars)))
 
 (defmethod initialize-instance :after ((client client) &key &allow-other-keys)
   (setf (out-stream client)
 	(make-instance 'telnet-byte-output-stream :stream (socket-stream (socket client))))
+  (setf (globvars client) (list '*standard-output* (out-stream client)
+				'*player-zone* (first *zone-list*)
+				'*player-room* (first (entry-rooms (first *zone-list*)))))
   (write-line "Привет, мир!" (out-stream client))
   (write-line "Привет, я сервер!" (out-stream client)))
 
 ;; Temporary *out* string for setting it as *standard-output*
-(defparameter *out* (make-array 1000 :fill-pointer 0 :element-type 'character))
+;(defparameter *out* (make-array 1000 :fill-pointer 0 :element-type 'character))
 
 (defmethod client-on-command ((client client) socket input)
-  (with-output-to-string (stream *out*)
-    (format stream "client-on-command: ~a ~a ~s~%" client socket input))
-;#+nil
-  (format (out-stream client) "Echo: ~a~%" input))
+;  (with-output-to-string (stream *out*)
+;    (format stream "client-on-command: ~a ~a ~s~%" client socket input))
+  (with-variables-from (globvars client)
+      (*standard-output* *player-zone* *player-room*)
+    (exec-command (string-trim '(#\Space #\Newline #\Return) input))
+    (room-about *player-room*)
+    (prompt)))
+
+
+;  (format (out-stream client) "Echo: ~a~%" input))
 
 (defun collect-input (socket buffer &optional (end-byte 10))
   (loop
@@ -154,12 +164,12 @@
      :with prev-byte = -1
      :while (listen stream)
      :doing
-     (format t "collect-input: listened; ")
+;     (format t "collect-input: listened; ")
      ;(format (socket-stream socket) "Hello there~%")   ;; output into buffers
      ;(force-output (socket-stream socket))
      ;(print (peek-char nil (socket-stream socket)))
      (setq byte (read-byte stream))
-     (format t "collect-input: read-byte ~s~%" byte)
+;     (format t "collect-input: read-byte ~s~%" byte)
      (when (= byte end-byte)
        (return t))
      (when (not (and (= byte 255) (= byte prev-byte)))
@@ -170,7 +180,7 @@
   (setf (fill-pointer (client-buffer client)) 0))
 
 (defmethod client-read ((client client) socket)
-  (format t "client-read ~s ~s~%" client socket)
+;  (format t "client-read ~s ~s~%" client socket)
   (with-slots (buffer) client
     (when (collect-input socket buffer)
       (prog1

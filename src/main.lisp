@@ -13,8 +13,11 @@
 
 (defun main ()
   (initialize-game)
-  (pvalue 12345678)
-  (start-telnet-server
+;  (temp-start-work *player-zone*)
+  (run-lispmud 3004)
+  
+#+nil  (pvalue 12345678)
+#+nil  (start-telnet-server
    +localhost+ +port+
    #'(lambda (stream)
        (let* ((*standard-input* stream)

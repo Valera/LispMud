@@ -63,3 +63,12 @@ forms to the hash-table."
 (defun dequeue (queue)
   (sb-thread:wait-on-semaphore (wait-queue-semaphore queue))
   (sb-queue:dequeue (wait-queue-sb-queue queue)))
+
+(defmacro with-variables-from (place vars-list &body forms)
+  `(let
+       ,(iter (for var in vars-list)
+	      (collect `(,var (getf ,place ',var))))
+     (unwind-protect
+	  (progn ,@forms)
+       ,@(iter (for var in vars-list)
+	       (collect `(setf (getf ,place ',var) ,var))))))

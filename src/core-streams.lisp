@@ -51,7 +51,7 @@
        (vector-push-extend char buffer)))))
 
 (defun send-string (buffer byte-stream &key start end)
-  (format t "sending stream ~s~%" buffer)
+;  (format t "sending stream ~s~%" buffer)
   (write-sequence (string-to-octets buffer :external-format :cp1251 :start start :end end)
 		  byte-stream)
   (force-output byte-stream)

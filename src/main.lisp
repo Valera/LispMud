@@ -38,6 +38,7 @@
 	  (east-exit *player-room*))
   (force-output))
 
+#+nil
 (defun player-loop ()
   (let (*player-exit-flag*)
     (loop named player-repl

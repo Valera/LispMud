@@ -1,4 +1,7 @@
 ;;; core-server.lisp
+;;;
+;;; Realization of thread pool tcp server. Made with tutorial by M. Bazon:
+;;; http://mihai.bazon.net/blog/howto-multi-threaded-tcp-server-in-common-lisp
 
 (in-package :lispmud)
 
@@ -154,7 +157,6 @@
     (room-about *player-room*)
     (prompt)))
 
-
 ;  (format (out-stream client) "Echo: ~a~%" input))
 
 (defun collect-input (socket buffer &optional (end-byte 10))
@@ -164,10 +166,6 @@
      :with prev-byte = -1
      :while (listen stream)
      :doing
-;     (format t "collect-input: listened; ")
-     ;(format (socket-stream socket) "Hello there~%")   ;; output into buffers
-     ;(force-output (socket-stream socket))
-     ;(print (peek-char nil (socket-stream socket)))
      (setq byte (read-byte stream))
 ;     (format t "collect-input: read-byte ~s~%" byte)
      (when (= byte end-byte)

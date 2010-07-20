@@ -11,9 +11,10 @@
 
 (defun recv-mail (receiver-hero)
   (bt:with-recursive-lock-held (*mail-queue-lock*)
-    (remove-if-not #'(lambda (recv) (string= recv receiver-hero))
-		   *mail-queue* :key #'second)
-    (delete-if #'(lambda (recv) (string= recv receiver-hero)) *mail-queue*)))
+    (prog1
+	(remove-if-not #'(lambda (recv) (string= recv receiver-hero))
+		       *mail-queue* :key #'second)
+      (delete-if #'(lambda (recv) (string= recv receiver-hero)) *mail-queue*)))
 
 (defun check-mail (receiver-name)
   (bt:with-recursive-lock-held (*mail-queue-lock*)

@@ -135,7 +135,8 @@
    (out-stream :accessor out-stream)
    (buffer :accessor client-buffer :initform (make-array 200 :fill-pointer 0 :element-type '(unsigned-byte 8)))
    (globvars :accessor globvars)
-   (player-state :accessor player-state :initform 'login)))
+   (player-state :accessor player-state :initform 'login)
+   (register-and-login-fsm :accessor register-and-login-fsm :initform (make-instance 'register-and-login-fsm))))
 
 (defmethod initialize-instance :after ((client client) &key &allow-other-keys)
   (setf (out-stream client)
@@ -152,12 +153,17 @@
 (defmethod client-on-command ((client client) socket input)
 ;  (with-output-to-string (stream *out*)
 ;    (format stream "client-on-command: ~a ~a ~s~%" client socket input))
-  (ecase (player-state client)
-      (login (process-in-login input))
+  (with-variables-from (globvars client)
+      (*standard-output* *player-zone* *player-room*)
+    (ecase (player-state client)
+      (login
+       (with-slots ((fsm register-and-login-fsm)) client
+	 (process-input1 fsm (string-trim '(#\Space #\Newline #\Return) input))
+	 (if (eql (current-state fsm) 'finish-login)
+	     (setf (player-state client) 'game))))
+	 ;; FIXME: Выход без регистрации.
       (game
-       (with-variables-from (globvars client)
-	  (*standard-output* *player-zone* *player-room*)
-	(exec-command (string-trim '(#\Space #\Newline #\Return) input))
+       	(exec-command (string-trim '(#\Space #\Newline #\Return) input))
 	(room-about *player-room*)
 	(prompt)))))
 

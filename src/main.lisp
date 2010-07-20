@@ -14,7 +14,7 @@
 (defun main ()
   (initialize-game)
 ;  (temp-start-work *player-zone*)
-  (run-lispmud 3004)
+  (run-lispmud 3006)
   
 #+nil  (pvalue 12345678)
 #+nil  (start-telnet-server

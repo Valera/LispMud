@@ -134,7 +134,8 @@
   ((socket :accessor socket :initarg :socket)
    (out-stream :accessor out-stream)
    (buffer :accessor client-buffer :initform (make-array 200 :fill-pointer 0 :element-type '(unsigned-byte 8)))
-   (globvars :accessor globvars)))
+   (globvars :accessor globvars)
+   (player-state :accessor player-state :initform 'login)))
 
 (defmethod initialize-instance :after ((client client) &key &allow-other-keys)
   (setf (out-stream client)
@@ -151,11 +152,14 @@
 (defmethod client-on-command ((client client) socket input)
 ;  (with-output-to-string (stream *out*)
 ;    (format stream "client-on-command: ~a ~a ~s~%" client socket input))
-  (with-variables-from (globvars client)
-      (*standard-output* *player-zone* *player-room*)
-    (exec-command (string-trim '(#\Space #\Newline #\Return) input))
-    (room-about *player-room*)
-    (prompt)))
+  (ecase (player-state client)
+      (login (process-in-login input))
+      (game
+       (with-variables-from (globvars client)
+	  (*standard-output* *player-zone* *player-room*)
+	(exec-command (string-trim '(#\Space #\Newline #\Return) input))
+	(room-about *player-room*)
+	(prompt)))))
 
 ;  (format (out-stream client) "Echo: ~a~%" input))
 

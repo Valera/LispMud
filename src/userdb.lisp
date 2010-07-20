@@ -7,9 +7,7 @@
 (defvar *user-db* (make-hash-table :test 'equal :synchronized t))
 
 (defun can-login (user-name password)
-    (if (string= (gethash user-name *user-db*) password)
-	t
-	nil))
+  (string= (gethash user-name *user-db*) password))
 
 (defun login (user-name password)
   (assert (can-login user-name password))

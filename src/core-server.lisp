@@ -6,12 +6,16 @@
 (in-package :lispmud)
 
 (defclass server ()
-  ((cmdqueue-sem :initform (sb-thread:make-semaphore))
-   (cmdqueue :initform (sb-queue:make-queue))
-   (workers-mutex :accessor server-workers-mutex :initform (bt:make-lock))
-   (workers :accessor server-workers :initform '())
-   (connections-mutex :accessor server-connections-mutex :initform (bt:make-lock))
-   (connections :accessor connections :initform (make-hash-table))))
+  ((cmdqueue-sem :initform (sb-thread:make-semaphore)) ; Семафор для работы с очередь команд.
+   (cmdqueue :initform (sb-queue:make-queue)) ; Очередь команд. Каждая команда -- функция, которая будет вызвана свободной нитью.
+   (workers-mutex :accessor server-workers-mutex :initform (bt:make-lock)) ; Блокировка для списка нитей-обработчиков данных.
+   (workers :accessor server-workers :initform '()) ; Список нитей-обраточкиков.
+   (connections-mutex :accessor server-connections-mutex :initform (bt:make-lock)) ; Блокировка на слот connections.
+   (connections :accessor connections :initform (make-hash-table)) ; Хеш-таблица, отображающая сокеты на их клиентские объекты.
+   (ctlqueue :accessor ctlqueue :initform (sb-queue:make-queue))))
+
+(define-condition shutting-down () ()) ;; Not used now.
+(define-condition disconnect-client () ())
 
 ;; Declarations of client class interface
 
@@ -35,13 +39,6 @@
     (format t "disconnect: ~a ~a~%" server socket)
     (socket-close socket)))
 
-(defgeneric add-worker (server &optional n)
-  (:documentation "Adds 'n' workers to thread pool.")
-  (:method ((server server) &optional n)
-    (bt:with-lock-held ((server-workers-mutex server))
-      (dotimes (count n)
-	(push (bt:make-thread #'(lambda () (worker-thread server))) (server-workers server))))))
-
 (defgeneric handle-client-input (server socket)
   (:documentation "Called from event loop when data is available in socket")
   (:method ((server server) socket)
@@ -50,27 +47,37 @@
       (let* ((client (gethash socket connections))
 	     (input (client-read client socket)))
 	(when input
-	  (send-to-workers server (curry #'client-on-command client socket input)))))))
+	  (send-to-workers server (cons (curry #'client-on-command client socket input) socket)))))))
+
+(defgeneric add-worker (server &optional n)
+  (:documentation "Adds 'n' workers to thread pool.")
+  (:method ((server server) &optional n)
+    (bt:with-recursive-lock-held ((server-workers-mutex server))
+      (dotimes (count n)
+	(push (bt:make-thread #'(lambda () (worker-thread server))) (server-workers server))))))
 
 (defgeneric worker-thread (server)
-  (:documentation "Working function for launching new thread. Processes input queue.")
+  (:documentation "Function that is executed within worker threads. Processes input queue.")
   (:method ((server server))
     (handler-case
         (with-slots (cmdqueue-sem cmdqueue) server
-          (loop
-             (loop :for event = (sb-queue:dequeue cmdqueue)
-                :while event
-                :do (funcall event))
-             (sb-thread:wait-on-semaphore cmdqueue-sem)))
+	  (iter
+	    (iter (for event = (sb-queue:dequeue cmdqueue))
+		  (while event)
+		  (for (fun . socket) = event)
+		  (handler-case ; А хорошо ли делать handler-case каждый раз?
+		      (funcall fun)
+		    (disconnect-client ()
+		      (sb-queue:enqueue (cons 'disconnect-client socket) (ctlqueue server)))))
+	    (sb-thread:wait-on-semaphore cmdqueue-sem)))
       (shutting-down ()
         ;; anything to do here?
-        )
+	#+ nil (error "shitting-down handler-case not implemented"))
       (error (condition)
-        (bt:with-lock-held ((server-workers-mutex server))
-          (delete (bt:current-thread) (server-workers server)))
-        (format t "~A"  condition)
-        ;; XXX: should start another worker here, or we'll run out
-        ))))
+        (bt:with-recursive-lock-held ((server-workers-mutex server))
+          (setf (server-workers server) (delete (bt:current-thread) (server-workers server)))
+	  (format t "working-thread: error of type \"~A\", starting new thread"  condition)
+	  (add-worker server 1))))))
 
 (defgeneric send-to-workers (server event)
   (:documentation "Enqueues event to server queue.")
@@ -84,38 +91,49 @@
 ;;(bt:join-thread *listener-thread*)
 
 (defgeneric provider-thread (server master-socket)
-  (:documentation "Main server loop, waits for input on 'master-sockets' and dispatches data.")
+  (:documentation "Main server loop, waits for input on 'master-socket' and dispatches data.")
   (:method ((server server) master-socket)
     (let ((sockets (list master-socket))
           (connlock (server-connections-mutex server)))
-      (handler-case
-          (loop
-             (loop :for s :in (wait-for-input sockets :ready-only t) :doing
-                (handler-case
-                    (if (eq s master-socket)
-                        ;; THEN: we have new connection
-                        (progn
-                          (bt:with-lock-held (connlock)
-                            (unless (null (slot-value s 'usocket::state))
-                              (let ((new (socket-accept s :element-type '(unsigned-byte 8))))
-                                (setf sockets (push new sockets))
-                                (handle-client-connect server new)))))
-                        ;; ELSE: client socket
-                        (if (listen (socket-stream s))
-                            ;; THEN: input available
-                            (handle-client-input server s)
-                            ;; ELSE: EOF, lost connection
-                            (progn
-                              (bt:with-lock-held (connlock)
-                                (handle-client-disconnect server s))
-                              (setf sockets (delete s sockets))
-                              (socket-close s))))
-                  (end-of-file ()
-                    ;; not sure we ever get here
-                    ))))
-	#+nil (shutting-down ()
-		;; anything to do here?
-		)))))
+      (unwind-protect
+	   (flet ((disconnect-socket (s)
+		    (bt:with-lock-held (connlock)
+		      (handle-client-disconnect server s))
+		    (setf sockets (delete s sockets))
+		    (socket-close s)))
+	     (iter
+	       (iter (for s in (wait-for-input sockets :ready-only t))
+
+		     (handler-case
+			 (if (eq s master-socket)
+			     ;; THEN: we have new connection
+			     (progn
+			       (bt:with-lock-held (connlock)
+				 (unless (null (slot-value s 'usocket::state))
+				   (let ((new (socket-accept s :element-type '(unsigned-byte 8))))
+				     (setf sockets (push new sockets))
+				     (handle-client-connect server new)))))
+			     ;; ELSE: client socket
+			     (if (listen (socket-stream s))
+				 ;; THEN: input available
+				 (handle-client-input server s)
+				 ;; ELSE: EOF, lost connection
+				 (disconnect-socket s)))
+		       (end-of-file ()
+			 ;; not sure we ever get here
+			 ))
+		     (unless (sb-queue:queue-empty-p (ctlqueue server))
+		       ;; If queue is not emty, disconnet correcponging socket.
+		       (destructuring-bind (message . socket)
+			   (sb-queue:dequeue (ctlqueue server))
+			 (format t "Got (~a ~a) in control queue" message socket)
+			 (if (eq message 'disconnect-client)
+			     (disconnect-socket socket)
+			     (error "Unknow message ~S in control queue." message)))))))
+	(bt:with-lock-held (connlock)
+	  (iter (for s in sockets)
+		(handle-client-disconnect server s)
+		(socket-close s)))))))
 
 (defun run-lispmud (port &key (host "localhost") (n-thread 1))
   (let ((serv (make-instance 'server))
@@ -136,7 +154,7 @@
    (buffer :accessor client-buffer :initform (make-array 200 :fill-pointer 0 :element-type '(unsigned-byte 8)))
    (globvars :accessor globvars)
    (player-state :accessor player-state :initform 'login)
-   (register-and-login-fsm :accessor register-and-login-fsm :initform (make-instance 'register-and-login-fsm))))
+   (register-and-login-fsm :accessor register-and-login-fsm)))
 
 (defmethod initialize-instance :after ((client client) &key &allow-other-keys)
   (setf (out-stream client)
@@ -144,8 +162,10 @@
   (setf (globvars client) (list '*standard-output* (out-stream client)
 				'*player-zone* (first *zone-list*)
 				'*player-room* (first (entry-rooms (first *zone-list*)))))
-  (write-line "Привет, мир!" (out-stream client))
-  (write-line "Привет, я сервер!" (out-stream client)))
+  (write-line "Вы подключены к серверу LISPMUD." (out-stream client))
+  (with-variables-from (globvars client)
+      (*standard-output*)
+    (setf (register-and-login-fsm client) (make-instance 'register-and-login-fsm))))
 
 ;; Temporary *out* string for setting it as *standard-output*
 ;(defparameter *out* (make-array 1000 :fill-pointer 0 :element-type 'character))
@@ -160,12 +180,14 @@
        (with-slots ((fsm register-and-login-fsm)) client
 	 (process-input1 fsm (string-trim '(#\Space #\Newline #\Return) input))
 	 (if (eql (current-state fsm) 'finish-login)
-	     (setf (player-state client) 'game))))
+	     (progn
+	       (setf (player-state client) 'game)
+	       (prompt)))))
 	 ;; FIXME: Выход без регистрации.
       (game
-       	(exec-command (string-trim '(#\Space #\Newline #\Return) input))
-	(room-about *player-room*)
-	(prompt)))))
+       (exec-command (string-trim '(#\Space #\Newline #\Return) input))
+       (room-about *player-room*)
+       (prompt)))))
 
 ;  (format (out-stream client) "Echo: ~a~%" input))
 

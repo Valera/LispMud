@@ -14,6 +14,7 @@
 
 (defun command-leave ()
   (format t "До свидания, возвращайся быстрей!~%")
+  (signal 'disconnect-client)
   (setf *player-exit-flag* t))
 
 (defun command-look ()

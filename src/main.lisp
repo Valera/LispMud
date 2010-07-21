@@ -11,10 +11,10 @@
   (setf *zone-list* (load-world *world-filename*))
   (pvalue *zone-list*))
 
-(defun main ()
+(defun main (&optional (port 3000))
   (initialize-game)
 ;  (temp-start-work *player-zone*)
-  (run-lispmud 3006)
+  (run-lispmud port)
   
 #+nil  (pvalue 12345678)
 #+nil  (start-telnet-server

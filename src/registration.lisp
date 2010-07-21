@@ -123,7 +123,8 @@
      (passwd :accessor passwd))
   (start
    :on-enter (format t "Введите 1, чтобы зарегистрироваться, или 2, чтобы войти в игру: ")
-   :on-input (let ((n (parse-integer input)))
+   :on-input (let ((n (handler-case (parse-integer input)
+			(parse-error () -1))))
 	       (cond
 		 ((= n 2) (next-state login-name))
 		 ((= n 1) (next-state register-1))

@@ -85,7 +85,7 @@
 	    (format t "На полу лежат:~%~{  ~a~%~}" (mapcar #'name items)))))
   (if (mobs room)
       (format t "Мобы:~%~{  ~a~%~}" (mobs room)))
-  (format t "~:[~;с~]~:[~;ю~]~:[~;з~]~:[~;в~]>"
+  (format t "~:[~;с~]~:[~;ю~]~:[~;з~]~:[~;в~]> "
 	  (north-exit *player-room*)
 	  (south-exit *player-room*)
 	  (west-exit *player-room*)

@@ -161,7 +161,8 @@
 	(make-instance 'telnet-byte-output-stream :stream (socket-stream (socket client))))
   (setf (globvars client) (list '*standard-output* (out-stream client)
 				'*player-zone* (first *zone-list*)
-				'*player-room* (first (entry-rooms (first *zone-list*)))))
+				'*player-room* (first (entry-rooms (first *zone-list*)))
+				'*player* (make-instance 'player)))
   (write-line "Вы подключены к серверу LISPMUD." (out-stream client))
   (with-variables-from (globvars client)
       (*standard-output*)
@@ -174,7 +175,7 @@
 ;  (with-output-to-string (stream *out*)
 ;    (format stream "client-on-command: ~a ~a ~s~%" client socket input))
   (with-variables-from (globvars client)
-      (*standard-output* *player-zone* *player-room*)
+      (*standard-output* *player-zone* *player-room* *player*)
     (ecase (player-state client)
       (login
        (with-slots ((fsm register-and-login-fsm)) client
@@ -185,8 +186,10 @@
 	       (room-about *player-room*)))))
 	 ;; FIXME: Выход без регистрации.
       (game
-       (exec-command (string-trim '(#\Space #\Newline #\Return) input))
-       (room-about *player-room*)))))
+       (handler-case
+	   (progn (exec-command (string-trim '(#\Space #\Newline #\Return) input))
+		  (room-about *player-room*))
+	 (error (condition) (format t "Command erred with condition ~a~%" condition)))))))
 
 ;  (format (out-stream client) "Echo: ~a~%" input))
 

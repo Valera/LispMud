@@ -1,4 +1,8 @@
 ;;; command.lisp
+;;;
+;;; Command player console interface. All commands in Russian.
+;;; Fasilities for definition of commands are situated in core-command.lisp.
+;;;
 
 (in-package :lispmud)
 
@@ -14,8 +18,7 @@
 
 (defun command-leave ()
   (format t "До свидания, возвращайся быстрей!~%")
-  (signal 'disconnect-client)
-  (setf *player-exit-flag* t))
+  (signal 'disconnect-client))
 
 (defun command-look ()
   "комманда, печатающая которкие описания выходов"
@@ -35,6 +38,7 @@
     (format t "Вы видите выходы на ~{~a~^, ~}.~%" exits)))
 
 (defun command-map ()
+  "Выводит на экран псевдографическую карту текущей зоны."
   (iter (with map = (map-array *player-zone*))
 	(for y from 0 below (array-dimension map 0))
 	(iter (for x from 0 below (array-dimension map 1))
@@ -44,6 +48,31 @@
 		      (format t "x"))
 		  (format t "-")))
 	(format t "~%")))
+
+;; FIXME: блокировка!
+(defun command-take (&rest item-names)
+  "Команда для подбирания вещей из текущей комнаты."
+  (if item-names
+      (iter (for item-name in item-names)
+	    (with taken-items)
+	    (iter (for item-on-floor in (items-on-floor *player-room*))
+		  (when (string-equal item-name (name item-on-floor))
+		    (push item-on-floor taken-items)
+		    (push item-on-floor (inventory *player*))
+		    (format t "Вы взяли с пола ~a.~%" (name item-on-floor))))
+	    (finally ;; Удалить поднятые шмотки из списка лежащих в комнате.
+	     (setf (items-on-floor *player-room*) (nset-difference (items-on-floor *player-room*) taken-items))))
+      (write-line "Что вы хотите взять-то?")))
+
+(defun command-inventory ()
+  "Комманда для просмотра вещей в инвентаре."
+  (let ((inventory (inventory *player*)))
+    (if inventory
+	(progn
+	  (write-line "Ваш инвентарь:")
+	  (iter (for item in inventory)
+		(format t "  ~a~%" (name item))))
+	(write-line "У вас ничего нет. :("))))
 
 (defun init-commands ()
   (init-command-table
@@ -55,4 +84,6 @@
      ("выходы" ,'command-exits)
      ("оглядеться" ,'command-look)
      ("карта" ,'command-map)
+     ("взять" ,'command-take)
+     ("инвентарь" ,'command-inventory)
      ("конец"  ,'command-leave))))

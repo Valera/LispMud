@@ -5,5 +5,6 @@
 (defvar *player*)
 
 (defclass player ()
-  ((inventory :accessor inventory :initform nil)))
+  ((inventory :accessor inventory :initform nil)
+   (name :accessor name :initarg :name)))
 

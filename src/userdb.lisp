@@ -39,4 +39,4 @@
 
 (defun load-user-db (file-name)
   "Load user database from file-name."
-  (setf *user-db* (load-hash-table file-name)))
+  (setf *user-db* (load-hash-table file-name :test 'equal :synchronized t)))

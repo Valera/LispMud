@@ -12,7 +12,10 @@
   (let ((exit (exit *player-room* direction)))
     (if (exit *player-room* direction)
 	(if (can-pass exit)
-	    (setf *player-room* (dest-room exit))
+	    (progn
+	      (deletef (players *player-room*) *player*)
+	      (setf *player-room* (dest-room exit))
+	      (push *player* (players *player-room*)))
 	    (format t "К сожалению, проход в эту сторону для тебя закрыт.~%"))
 	(format t "Вы не видите никакого прохода в этом направилении~%"))))
 
@@ -59,7 +62,7 @@
 		  (when (string-equal item-name (name item-on-floor))
 		    (push item-on-floor taken-items)
 		    (push item-on-floor (inventory *player*))
-		    (format t "Вы взяли с пола ~a.~%" (name item-on-floor))))
+		    (format t "Вы взяли с пола ~a.~%" (word-vp item-on-floor))))
 	    (finally ;; Удалить поднятые шмотки из списка лежащих в комнате.
 	     (setf (items-on-floor *player-room*) (nset-difference (items-on-floor *player-room*) taken-items))))
       (write-line "Что вы хотите взять-то?")))
@@ -71,7 +74,7 @@
 	(progn
 	  (write-line "Ваш инвентарь:")
 	  (iter (for item in inventory)
-		(format t "  ~a~%" (name item))))
+		(format t "  ~a~%" (word-ip item))))
 	(write-line "У вас ничего нет. :("))))
 
 (defun init-commands ()

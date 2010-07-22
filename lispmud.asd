@@ -32,5 +32,6 @@
 				     (:file "store")
 				     (:file "userdb")
 				     (:file "registration")
+				     (:file "player")
 				     (:file "command")
 				     (:file "world")))))

@@ -85,6 +85,9 @@
 	    (format t "На полу лежат:~%~{  ~a~%~}" (mapcar #'name items)))))
   (if (mobs room)
       (format t "Мобы:~%~{  ~a~%~}" (mobs room)))
+  (let ((other-players (remove *player* (players room))))
+    (if other-players
+	(format t "Игроки:~%~{  ~a~%~}" (mapcar #'name other-players))))
   (format t "~:[~;с~]~:[~;ю~]~:[~;з~]~:[~;в~]> "
 	  (north-exit *player-room*)
 	  (south-exit *player-room*)

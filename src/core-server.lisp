@@ -162,7 +162,7 @@
   (setf (globvars client) (list '*standard-output* (out-stream client)
 				'*player-zone* (first *zone-list*)
 				'*player-room* (first (entry-rooms (first *zone-list*)))
-				'*player* (make-instance 'player)))
+				'*player* nil))
   (write-line "Вы подключены к серверу LISPMUD." (out-stream client))
   (with-variables-from (globvars client)
       (*standard-output*)
@@ -182,6 +182,7 @@
 	 (process-input1 fsm (string-trim '(#\Space #\Newline #\Return) input))
 	 (if (eql (current-state fsm) 'finish-login)
 	     (progn
+	       (setf *player* (make-instance 'player :name (name fsm)))
 	       (setf (player-state client) 'game)
 	       (room-about *player-room*)))))
 	 ;; FIXME: Выход без регистрации.

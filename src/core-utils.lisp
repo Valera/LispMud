@@ -7,18 +7,22 @@
 
 (defun dump-hash-table (hash file-name)
   "Dump hash-table HASH to file with name FILE-NAME."
-  (with-open-file (stream file-name :direction :output)
+  (with-open-file (stream file-name :direction :output :if-exists :supersede)
     (write (append (list :test (hash-table-test hash))
 		   (hash-table-alist hash))
-	   :stream stream)))
+	   :stream stream)
+    ;; Add newline at end of file.
+    (terpri stream)))
 
-(defun load-hash-table (file-name)
+(defun load-hash-table (file-name &key (test 'eql) synchronized)
   "Loads hash table from file with name FILE-NAME and returns it."
-  (with-open-file (stream file-name)
-    (let* ((sexp (read stream))
-	  (test (when (eql (first sexp) :test) (second sexp)))
-	  (alist (if test (third sexp) sexp)))
-     (alist-hash-table alist :test (or test 'eql)))))
+  (handler-case
+      (with-open-file (stream file-name)
+	(let* ((sexp (read stream))
+	       (local-test (when (eql (first sexp) :test) (second sexp)))
+	       (alist (if test (nthcdr 2 sexp) sexp)))
+	  (alist-hash-table alist :test (or local-test test))))
+    (file-error () (make-hash-table :test test :synchronized synchronized))))
 
 (defun print-hash-table (hash)
   "Prints hash table to *standard-output*"

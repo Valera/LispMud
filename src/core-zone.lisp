@@ -1,3 +1,5 @@
+;;; core-zone.lisp
+
 (in-package :lispmud)
 
 (defvar *zone-id-source* 0
@@ -12,7 +14,7 @@
    (mobs-counters :accessor mobs-counters)
    (mobs-max-numbers :accessor mobs-max-numbers)
    (lock :accessor lock)
-   (message-queue :accessor message-queue :initform nil)))
+   (message-queue :accessor message-queue :initform (sb-queue:make-queue :name "zone-queue"))))
 
 (defmethod initialize-instance :after ((zone zone) &rest initargs)
   (declare (ignore initargs))
@@ -26,7 +28,7 @@
       (schedule-timer (make-timer #'(lambda ()
 				      (queue-mesg zone mesg-type arguments)))
 		      2)
-      (enqueue (list mesg-type arguments) (message-queue zone))))
+      (sb-queue:enqueue (list mesg-type arguments) (message-queue zone))))
 
 (defgeneric get-mesg (zone))
 (defmethod get-mesg ((zone zone))
@@ -106,6 +108,7 @@
 	  (incf (aref (mobs-counters zone) i))
 	  (setf (aref (mobs-max-numbers zone) i) max-number))))
 
+;; Временная функция для отладки. Добавляет в комнату с координатами (1, 1) собаку.
 (defmethod temp-start-work ((zone zone))
   (setf (mobs-spec zone) (list (list 'dog 1 1 300 1)))
   (start-work zone))

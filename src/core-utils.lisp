@@ -72,3 +72,21 @@ forms to the hash-table."
 	  (progn ,@forms)
        ,@(iter (for var in vars-list)
 	       (collect `(setf (getf ,place ',var) ,var))))))
+
+(defun not-empty-string-p (string)
+  (string/= "" string))
+
+(defun read-value-in-range (prompt lower upper)
+  "Reads integer value from stream from upper to lower inclusive"
+  (format t "~a: " prompt)
+  (let ((val (read)))
+    (if (and (integerp val) (<= lower val upper))
+	val
+	(read-value-in-range prompt lower upper))))
+
+(defun prompt-read (prompt &key satisfy-p)
+  (format t "~a" prompt)
+  (loop
+       for value = (read-line) then (read-line)
+       when (or (not satisfy-p) (funcall satisfy-p value))
+       do (return value)))

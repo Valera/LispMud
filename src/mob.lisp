@@ -1,6 +1,9 @@
+;;; mob.lisp
+
 (in-package :lispmud)
 
 (defun shuffle-list (list)
+  "Shuffles elements of list in random way."
   (iter (with l = (length list))
 	(for i from 0 below l)
 	(rotatef (elt list i) (elt list (random l))))

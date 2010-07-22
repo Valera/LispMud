@@ -15,6 +15,7 @@
    (description :accessor description :initform "" :initarg :description)
    (mobs :accessor mobs :initform nil)
    (players :accessor players :initform nil)
+   (items-on-floor :accessor items-on-floor :initform (list (make-instance 'item :name "мочалка") (make-instance 'item :name "кусок мыла")))
    (west-exit :accessor west-exit :initform nil :initarg :west-exit)
    (east-exit :accessor east-exit :initform nil :initarg :east-exit)
    (south-exit :accessor south-exit :initform nil :initarg :south-exit)
@@ -60,11 +61,12 @@
   (slot-value room (exit-slot-for-direction direction)))
 
 (defun dx-for-direction (direction)
-  "Returns shift in X coordinate for moving in direction parameter."
+  "Returns shift in X coordinate for moving in given direction."
   (ecase direction
     (:north 0) (:east  1) (:south 0) (:west  -1)))
 
 (defun dy-for-direction (direction)
+  "Returns shift in Y coordinate for moving in given direction."
   (ecase direction
     (:north -1) (:east  0) (:south 1) (:west  0)))
 
@@ -76,5 +78,16 @@
 (defgeneric room-about (room))
 (defmethod room-about ((room myroom))
   (format t "В комнате ~a~%" (short-description *player-room*))
+  (let ((items (items-on-floor room)))
+    (if items
+	(if (= (length items) 1)
+	    (format t "На полу лежит ~a.~%" (name (first items)))
+	    (format t "На полу лежат:~%~{  ~a~%~}" (mapcar #'name items)))))
   (if (mobs room)
-      (format t "Мобы:~%~{  ~a~%~}" (mobs room))))
+      (format t "Мобы:~%~{  ~a~%~}" (mobs room)))
+  (format t "~:[~;с~]~:[~;ю~]~:[~;з~]~:[~;в~]>"
+	  (north-exit *player-room*)
+	  (south-exit *player-room*)
+	  (west-exit *player-room*)
+	  (east-exit *player-room*))
+  (force-output))

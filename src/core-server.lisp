@@ -182,12 +182,11 @@
 	 (if (eql (current-state fsm) 'finish-login)
 	     (progn
 	       (setf (player-state client) 'game)
-	       (prompt)))))
+	       (room-about *player-room*)))))
 	 ;; FIXME: Выход без регистрации.
       (game
        (exec-command (string-trim '(#\Space #\Newline #\Return) input))
-       (room-about *player-room*)
-       (prompt)))))
+       (room-about *player-room*)))))
 
 ;  (format (out-stream client) "Echo: ~a~%" input))
 

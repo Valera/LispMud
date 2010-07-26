@@ -24,7 +24,9 @@
   (define-case "мочалка" "молчалки" "мочалке" "мочалку" "мочалкой" "мочалке")
   (initialize-game)
   (load-game-data)
+  (start-event-loop)
   (temp-start-work (first *zone-list*)) ;; Временная функция -- добаляет собаку на карту.
   (unwind-protect
       (run-lispmud port)
-    (save-game-data)))
+    (save-game-data)
+    (stop-event-loop)))

@@ -2,19 +2,20 @@
 
 (in-package :lispmud)
 
-(defun shuffle-list (list)
-  "Shuffles elements of list in random way."
-  (iter (with l = (length list))
-	(for i from 0 below l)
-	(rotatef (elt list i) (elt list (random l))))
-  list)
-
 (defclass mob ()
   ((name :accessor name :initarg :name)
    (description :accessor description :initarg :description)
+   (hp :accessor hp)
+   (max-hp :accessor max-hp :initarg :map-hp :initform 10)
+   (mob-room :accessor mob-room :initarg :mob-room)
    behaviour
    items
    (zone :accessor zone :initarg :zone)))
+
+(defmethod initialize-instance :after ((mob mob) &rest initargs)
+  (declare (ignore initargs))
+  (setf (hp mob) (max-hp mob))
+  (queue-mesg (zone mob) :mob-activity (list 'activity) :timeout 20))
 
 (defgeneric battle (mob mob2-or-player))
 
@@ -42,16 +43,14 @@
 
 ;; Сделать что-нибудь, чтобы казаться настоящим.
 (defgeneric activity (mob))
-(defmethod activity :after ((mob mob))
-  (queue-mesg (zone mob) :mob-activity (list 'activity) :timeout 2))
-
-;; (defmethod initialize-instance
-(defmethod initialize-instance :after ((mob mob) &rest initargs)
-  (declare (ignore initargs))
-  (queue-mesg (zone mob) :mob-activity (list 'activity) :timeout 20))
+(defmethod activity ((mob mob))
+  #+nil (queue-mesg (zone mob) :mob-activity (list 'activity) :timeout 2)
+  (iter (for p in (players (mob-room mob)))
+	(format (output p) "~&Собака почесала себя лапой за ухом и зевнула.~%")))
 
 (defclass dog (mob) ())
 
 (defmethod initialize-instance :after ((dog dog) &rest initargs)
   (declare (ignore initargs))
+  (add-event 3 #'(lambda () (activity dog)) nil 3000)
   (setf (name dog) "Cобака"))

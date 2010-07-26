@@ -6,6 +6,16 @@
 
 (in-package :lispmud)
 
+;; FIXME: move to other file.
+(defun player-exited (room player)
+  (iter (for p in (players room))
+	(format (output p) "~&~a вышел из комнаты~%" (name player))))
+
+(defun player-took (room player thing)
+  (iter (for p in (remove player (players room)))
+	(format (output p) "~&~a поднял с пола ~a и положил к себе в инвентарь.~%"
+		(name player) (word-vp thing))))
+
 (defun command-go-to-direction (direction)
   "Функции перехода по какому-нибудь направлению делаются каррированием этот функции."
   (assert (member direction *exits*))
@@ -14,6 +24,7 @@
 	(if (can-pass exit)
 	    (progn
 	      (deletef (players *player-room*) *player*)
+	      (player-exited *player-room* *player*)
 	      (setf *player-room* (dest-room exit))
 	      (push *player* (players *player-room*)))
 	    (format t "К сожалению, проход в эту сторону для тебя закрыт.~%"))
@@ -62,6 +73,7 @@
 		  (when (string-equal item-name (name item-on-floor))
 		    (push item-on-floor taken-items)
 		    (push item-on-floor (inventory *player*))
+		    (player-took *player-room* *player* item-on-floor)
 		    (format t "Вы взяли с пола ~a.~%" (word-vp item-on-floor))))
 	    (finally ;; Удалить поднятые шмотки из списка лежащих в комнате.
 	     (setf (items-on-floor *player-room*) (nset-difference (items-on-floor *player-room*) taken-items))))

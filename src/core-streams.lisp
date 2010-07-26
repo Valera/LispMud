@@ -20,6 +20,7 @@
 (defclass telnet-byte-output-stream (fundamental-character-output-stream)
   ((inner-stream :initarg :stream :reader inner-stream)
    (col-index :initform 0 :accessor col-index-of)
+   (start-line-p :initform t :accessor start-line-p)
    (buffer :initform (make-array 200 :element-type 'character :fill-pointer 0))))
      
 (defmethod stream-element-type ((stream telnet-byte-output-stream))
@@ -35,27 +36,31 @@
 (defmethod stream-line-length ((stream telnet-byte-output-stream))
   nil)
 
+(defmethod stream-start-line-p ((stream telnet-byte-output-stream))
+  (start-line-p stream))
+
 (defmethod stream-force-output ((stream telnet-byte-output-stream))
   (force-output (inner-stream stream)))
 
 (defmethod stream-write-char ((stream telnet-byte-output-stream) char)
-  (with-slots (buffer columns inner-stream) stream
+  (with-slots (buffer columns inner-stream start-line-p) stream
     (cond
       ((char= char #\Newline)
        (vector-push-extend #\Return buffer)
        (vector-push-extend #\Newline buffer)
        (stream-write-string stream buffer)
        (force-output inner-stream)
-       (setf (fill-pointer buffer) 0))
+       (setf (fill-pointer buffer) 0
+	     start-line-p t))
       (t
-       (vector-push-extend char buffer)))))
+       (vector-push-extend char buffer)
+       (setf start-line-p nil)))))
 
 (defun send-string (buffer byte-stream &key start end)
 ;  (format t "sending stream ~s~%" buffer)
   (write-sequence (string-to-octets buffer :external-format :cp1251 :start start :end end)
 		  byte-stream)
-  (force-output byte-stream)
-  )
+  (force-output byte-stream))
 
 ;stream-write-string stream string &optional start end
 (defvar *ya-bytes* (string-to-octets "яя" :external-format :cp1251))
@@ -75,5 +80,6 @@
 			  (incf start)))
 		  (send-string string inner-stream :start start :end end)))
 	  ;; else: букв я в строке нет, посылаем её целиком.
-	  (send-string string inner-stream :start start :end end)))))
+	  (send-string string inner-stream :start start :end end))))
+  (setf (start-line-p stream) (char= (last-elt string) #\Newline)))
 

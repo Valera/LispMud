@@ -178,14 +178,16 @@
       (*standard-output* *player-zone* *player-room* *player*)
     (ecase (player-state client)
       (login
-       (with-slots ((fsm register-and-login-fsm)) client
-	 (process-input1 fsm (string-trim '(#\Space #\Newline #\Return) input))
-	 (if (eql (current-state fsm) 'finish-login)
-	     (progn
-	       (setf *player* (make-instance 'player :name (name fsm)))
-	       (setf (player-state client) 'game)
-	       (room-about *player-room*)))))
-	 ;; FIXME: Выход без регистрации.
+       (handler-case
+	   (with-slots ((fsm register-and-login-fsm)) client
+	     (process-input1 fsm (string-trim '(#\Space #\Newline #\Return) input))
+	     (if (eql (current-state fsm) 'finish-login)
+		 (progn
+		   (setf *player* (make-instance 'player :name (name fsm) :output   *standard-output*))
+		   (setf (player-state client) 'game)
+		   (room-about *player-room*))))
+       ;; FIXME: Выход без регистрации.
+	 (error (condition) (format t "Command erred with condition ~a~%" condition))))
       (game
        (handler-case
 	   (progn (exec-command (string-trim '(#\Space #\Newline #\Return) input))

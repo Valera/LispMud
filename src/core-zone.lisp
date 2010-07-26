@@ -104,7 +104,8 @@
     (setf (mobs-max-numbers zone) (make-array mobs-type-count))
     (iter (for (mob-class x y respawn-rate max-number) in (mobs-spec zone))
 	  (for i upfrom 0)
-	  (push (make-instance mob-class :zone zone) (mobs (aref (map-array zone) x Y)))
+	  (push (make-instance mob-class :zone zone :mob-room (aref (map-array zone) x y))
+		(mobs (aref (map-array zone) x y)))
 	  (incf (aref (mobs-counters zone) i))
 	  (setf (aref (mobs-max-numbers zone) i) max-number))))
 

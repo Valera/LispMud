@@ -14,6 +14,8 @@
 			:components ((:file "packages" )
 				     ;; core
 				     (:file "core-utils")
+				     (:file "rucase")
+				     (:file "event-timer")
 				     (:file "core-threadvars")
 				     (:file "core-command")
 				     (:file "core-FSM")

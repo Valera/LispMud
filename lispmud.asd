@@ -8,7 +8,7 @@
 (defsystem :lispmud
   :serial t
   :depends-on (:split-sequence :alexandria :iterate :sb-queue 
-			       :bordeaux-threads :usocket)
+			       :bordeaux-threads :usocket :cl-store)
   :components ((:module "src"
 			:serial t
 			:components ((:file "packages" )

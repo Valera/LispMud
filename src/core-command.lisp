@@ -23,3 +23,13 @@
 		(apply command-fun args)
 		(format t "Комманда не найдена.~%"))))
 	(format t "Ээээ... что?~%"))))
+
+(defmacro word-dispatch (word &body clauses)
+  `(when (plusp (length ,word))
+     (cond
+       ,@(iter (for (case-word . forms) in clauses)
+	       (collecting
+		 (if (not (eql case-word t))
+		     `((= (mismatch ,word ,case-word) (length ,word))
+		       ,@forms)
+		     `(t ,@forms)))))))

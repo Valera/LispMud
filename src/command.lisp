@@ -16,6 +16,37 @@
 	(format (output p) "~&~a поднял с пола ~a и положил к себе в инвентарь.~%"
 		(name player) (word-vp thing))))
 
+(defun mudname-equal (short-name long-name)
+  (iter (with short-name-length = (length short-name))
+	(with long-name-length = (length long-name))
+	(for start1 initially 0 then (1+ end1))
+	(for start2 initially 0 then (1+ end2))
+	(for end1 = (or (position #\.    short-name :start start1) short-name-length))
+	(for end2 = (or (position #\Space long-name :start start2) long-name-length))
+	(if (< (or (mismatch short-name long-name :start1 start1 :end1 end1 :start2 start2 :end2 end2) end1)
+	       end1)
+	    (return-from mudname-equal nil))
+	(while (< end1 short-name-length)))
+  t)
+
+(defun command-store (&rest subcommand-and-names)
+  (if subcommand-and-names
+      (let ((subcomm (first subcommand-and-names))
+	    (names (rest subcommand-and-names)))
+	(word-dispatch subcomm
+	  ("положить"
+	   (iter (for name in names)
+		 (for found-item = (find name (inventory *player*) :key #'name :test #'string-equal))
+		 (print found-item)
+		 (deletef (inventory *player*) found-item)
+		 (put-to-store (name *player*) found-item)))
+	  ("забрать"
+	   (iter (for name in names)
+		 (for found-item = (take-from-store (name *player*) name))
+		 (push found-item (inventory *player*))))
+	  (t (format t "~&Вы можете ПОЛОЖИТЬ вещь на слад или ЗАБРАТЬ её.~%"))))
+      (format t "На сладе у вас лежат вещи:~%~{   ~A~%~}" (mapcar #'name (items-in-store (name *player*))))))
+
 (defun command-go-to-direction (direction)
   "Функции перехода по какому-нибудь направлению делаются каррированием этот функции."
   (assert (member direction *exits*))
@@ -70,7 +101,7 @@
       (iter (for item-name in item-names)
 	    (with taken-items)
 	    (iter (for item-on-floor in (items-on-floor *player-room*))
-		  (when (string-equal item-name (name item-on-floor))
+		  (when (mudname-equal item-name (name item-on-floor))
 		    (push item-on-floor taken-items)
 		    (push item-on-floor (inventory *player*))
 		    (player-took *player-room* *player* item-on-floor)
@@ -101,4 +132,5 @@
      ("карта" ,'command-map)
      ("взять" ,'command-take)
      ("инвентарь" ,'command-inventory)
+     ("склад" ,'command-store)
      ("конец"  ,'command-leave))))

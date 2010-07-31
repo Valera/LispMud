@@ -7,11 +7,14 @@
 
 (defun put-to-store (person thing)
   (bt:with-recursive-lock-held (*store-lock*)
-    (push thing (gethash person *store*))))
+    (let ((person (if (stringp person) person (name person))))
+      (push thing (gethash person *store*)))))
 
-(defun take-from-store (person thing)
+(defun take-from-store (person thing-name)
   (bt:with-recursive-lock-held (*store-lock*)
-    (remove thing (gethash person *store*))))
+    (let ((thing (find thing-name (gethash person *store*) :key #'name :test #'string-equal)))
+      (deletef (gethash person *store*) thing)
+      thing)))
 
 (defun items-in-store (person)
   (bt:with-recursive-lock-held (*store-lock*)
@@ -19,8 +22,8 @@
 
 (defun load-store (file-name)
   (bt:with-recursive-lock-held (*store-lock*)
-    (setf *store* (load-hash-table file-name))))
+    (setf *store* (cl-store:restore file-name))))
 
 (defun dump-store (file-name)
   (bt:with-recursive-lock-held (*store-lock*)
-    (dump-hash-table *store* file-name)))
+    (cl-store:store *store* file-name)))

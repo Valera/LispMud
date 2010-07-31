@@ -59,25 +59,24 @@
 (defgeneric worker-thread (server)
   (:documentation "Function that is executed within worker threads. Processes input queue.")
   (:method ((server server))
-    (handler-case
-        (with-slots (cmdqueue-sem cmdqueue) server
-	  (iter
-	    (iter (for event = (sb-queue:dequeue cmdqueue))
-		  (while event)
-		  (for (fun . socket) = event)
-		  (handler-case ; А хорошо ли делать handler-case каждый раз?
-		      (funcall fun)
-		    (disconnect-client ()
-		      (sb-queue:enqueue (cons 'disconnect-client socket) (ctlqueue server)))))
-	    (sb-thread:wait-on-semaphore cmdqueue-sem)))
-      (shutting-down ()
-        ;; anything to do here?
-	#+ nil (error "shitting-down handler-case not implemented"))
-      (error (condition)
-        (bt:with-recursive-lock-held ((server-workers-mutex server))
-          (setf (server-workers server) (delete (bt:current-thread) (server-workers server)))
-	  (format t "working-thread: error of type \"~A\", starting new thread"  condition)
-	  (add-worker server 1))))))
+    (unwind-protect
+	 (handler-case
+	     (with-slots (cmdqueue-sem cmdqueue) server
+	       (iter
+		 (iter (for event = (sb-queue:dequeue cmdqueue))
+		       (while event)
+		       (for (fun . socket) = event)
+		       (handler-case ; А хорошо ли делать handler-case каждый раз?
+			   (funcall fun)
+			 (disconnect-client ()
+			   (sb-queue:enqueue (cons 'disconnect-client socket) (ctlqueue server)))))
+		 (sb-thread:wait-on-semaphore cmdqueue-sem)))
+	   (shutting-down ()
+	     ;; anything to do here?
+	     #+ nil (error "shitting-down handler-case not implemented")))
+      (bt:with-recursive-lock-held ((server-workers-mutex server))
+	(setf (server-workers server) (delete (bt:current-thread) (server-workers server)))
+	(add-worker server 1)))))
 
 (defgeneric send-to-workers (server event)
   (:documentation "Enqueues event to server queue.")
@@ -191,8 +190,7 @@
       (game
        (handler-case
 	   (progn (exec-command (string-trim '(#\Space #\Newline #\Return) input))
-		  (room-about *player-room*))
-	 (error (condition) (format t "Command erred with condition ~a~%" condition)))))))
+		  (room-about *player-room*)))))))
 
 ;  (format (out-stream client) "Echo: ~a~%" input))
 

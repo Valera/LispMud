@@ -7,6 +7,10 @@
    (description :accessor description)
    (price :accessor price)))
 
+(defmethod print-object ((obj item) stream)
+  (print-unreadable-object (obj stream :type t :identity t)
+    (format stream "\"~A\"" (name obj))))
+
 ;(defclass wearable-item ()
 ;   (min-level :accessor min-level))
 

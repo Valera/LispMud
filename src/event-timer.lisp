@@ -27,10 +27,10 @@
 			  (< (getf (first *scheduled-events*) :time) (get-internal-real-time))))
 	      (for event = (pop *scheduled-events*))
 	      (when (getf event :function)
-		(format t "calling fun ~a~%" (getf event :function))
+		(format t "~&Calling fun ~a~%" (getf event :function))
 		(funcall (getf event :function)))
 	      (when (getf event :repeat-interval)
-		(format t "...rescheduling it.")
+		(format t "~&...rescheduling it.~%")
 		(with-lock-held (*new-scheduled-events-lock*)
 		  (setf (getf event :time) (+ (get-internal-real-time) (getf event :repeat-interval)))
 		  (push event *new-scheduled-events*)))))))
@@ -38,18 +38,15 @@
 (defun add-event (time event-fun zone repeat-interval)
   (with-lock-held (*new-scheduled-events-lock*)
     (push (list :time (+ (get-internal-real-time) time) :function event-fun
-		:domain zone :repeat-interval repeat-interval)
+		:domain zone :repeat-interval (* repeat-interval 1000))
 	  *new-scheduled-events*)))
 
 ;; LOCK!!!
 (defun start-event-loop ()
   (setf *scheduled-events* nil
 	*new-scheduled-events* nil)
-  (schedule-timer (setf *timer* (make-timer (lambda ()
-					      (format t "Timer time...~%")
-					      (pick-events))))
+  (schedule-timer (setf *timer* (make-timer (lambda () (pick-events))))
 		  *timer-period* :repeat-interval *timer-period*))
 
 (defun stop-event-loop ()
   (setf *timer-stop-flag* t))
-

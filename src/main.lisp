@@ -15,10 +15,14 @@
   (pvalue *zone-list*))
 
 (defun load-game-data ()
-  (load-user-db (concatenate 'string *savedir* "users.db")))
+  (flet ((full-path (fname) (concatenate 'string *savedir* fname)))
+    (load-user-db (full-path "users.db"))
+    (load-store   (full-path "store.db"))))
 
 (defun save-game-data ()
-  (dump-user-db (concatenate 'string *savedir* "users.db")))
+  (flet ((full-path (fname) (concatenate 'string *savedir* fname)))
+    (dump-user-db (full-path "users.db"))
+    (dump-store   (full-path "store.db"))))
 
 (defun main (&optional (port 3000))
   (define-case "мочалка" "молчалки" "мочалке" "мочалку" "мочалкой" "мочалке")

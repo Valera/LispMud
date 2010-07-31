@@ -3,11 +3,12 @@
 ;;; Файл с описанием процесса боя между игроками и мобаби, игроками и игроками.
 ;;;
 
-(defgeneric attack (atacker defender)
-  (:documentation "Функция, выполняющая атаку atacker'а на defender'а."))
+(in-package :lispmud)
 
-;(defmethod attack ((atacker player) (defender mob))
-;  (decf (hp mob) (roll-damage player))
-;  (if (minusp (hp mob))
-;      (format t 
-;)
+(defgeneric attack (attacker defender)
+  (:documentation "Функция, выполняющая атаку attacker'а на defender'а."))
+
+(defmethod attack ((attacker player) (defender mob))
+  (decf (hp defender) 1)
+  (if (<= (hp defender) 0)
+      (format t "~A умер." (word-ip defender))))

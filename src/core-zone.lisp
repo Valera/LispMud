@@ -46,12 +46,10 @@
 
 (defun load-zone (filename)
   (with-open-file (stream filename)
-    (destructuring-bind
-	  (&key zone-name zone-rooms zone-mobs
-		((:zone-size (size-x size-y))))
+    (destructuring-bind (&key zone-name zone-rooms mobs-spec
+			      ((:zone-size (size-x size-y))))
 	(read stream)
-      (pvalue zone-name zone-rooms zone-mobs
-	      (list size-x size-y))
+      (pvalue zone-name zone-rooms (list size-x size-y))
       (let ((map (make-array (list size-x size-y) :initial-element nil))
 	    (entry-rooms nil))
 	(dolist (room zone-rooms)
@@ -68,7 +66,8 @@
 				 :north-exit north-exit :south-exit south-exit))
 	    (push (aref map y x) entry-rooms)))
 	(link-rooms map)
-	(make-instance 'zone :name zone-name :map-array map :entry-rooms entry-rooms)  ))))
+	(make-instance 'zone :name zone-name :map-array map
+		       :mobs-spec mobs-spec :entry-rooms entry-rooms)))))
 
 (defun link-rooms (zone-map)
   (pvalue "link-rooms" zone-map)
@@ -111,7 +110,6 @@
 
 ;; Временная функция для отладки. Добавляет в комнату с координатами (1, 1) собаку.
 (defmethod temp-start-work ((zone zone))
-  (setf (mobs-spec zone) (list (list 'dog 1 1 300 1)))
   (start-work zone))
 
 ;; Закончить работу зоны и все петли событий, чтобы освободить ресурсы.

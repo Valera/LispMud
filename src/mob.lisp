@@ -52,5 +52,5 @@
 
 (defmethod initialize-instance :after ((dog dog) &rest initargs)
   (declare (ignore initargs))
-  (add-event 3 #'(lambda () (activity dog)) nil 3000)
+  (add-event 3 #'(lambda () (activity dog)) nil 3)
   (setf (name dog) "Cобака"))

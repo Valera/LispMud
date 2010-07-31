@@ -56,7 +56,7 @@
        (vector-push-extend char buffer)
        (setf start-line-p nil)))))
 
-(defun send-string (buffer byte-stream &key start end)
+(defun send-string (buffer byte-stream &key (start 0) end)
 ;  (format t "sending stream ~s~%" buffer)
   (write-sequence (string-to-octets buffer :external-format :cp1251 :start start :end end)
 		  byte-stream)
@@ -74,10 +74,9 @@
 	  ;; Хак для правильной обработки телнетом этой буквы.
 	  (let ((otrezki  (neigbours-list (append `(,start) positions `(,end)))))
 	    (iter (for (start . end) in otrezki)
-		  (if-first-time
-		   (progn)
-		   (progn (write-sequence *ya-bytes* inner-stream)
-			  (incf start)))
+		  (unless (first-time-p)
+		    (write-sequence *ya-bytes* inner-stream)
+		    (incf start))
 		  (send-string string inner-stream :start start :end end)))
 	  ;; else: букв я в строке нет, посылаем её целиком.
 	  (send-string string inner-stream :start start :end end))))

@@ -5,16 +5,16 @@
 (defvar +localhost+ #(0 0 0 0))
 (defvar +port+ 8000)
 (defvar *world-filename* "world.lmud")
-(defvar *zone-list*)
-(defvar *player-output*)
 (defvar *savedir* "savedir/")
 
 (defun initialize-game ()
+  (reset-online-users)
   (init-commands)
   (setf *zone-list* (load-world *world-filename*))
   (pvalue *zone-list*))
 
 (defun load-game-data ()
+  (load "src/cases.lisp")
   (flet ((full-path (fname) (concatenate 'string *savedir* fname)))
     (load-user-db (full-path "users.db"))
     (load-store   (full-path "store.db"))))
@@ -25,7 +25,7 @@
     (dump-store   (full-path "store.db"))))
 
 (defun main (&optional (port 3000))
-  (define-case "мочалка" "молчалки" "мочалке" "мочалку" "мочалкой" "мочалке")
+
   (initialize-game)
   (load-game-data)
   (start-event-loop)

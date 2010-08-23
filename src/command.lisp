@@ -47,6 +47,14 @@
 	  (t (format t "~&Вы можете ПОЛОЖИТЬ вещь на слад или ЗАБРАТЬ её.~%"))))
       (format t "На сладе у вас лежат вещи:~%~{   ~A~%~}" (mapcar #'name (items-in-store (name *player*))))))
 
+
+;(defun command-attack (defender)
+;  (iter (for candidate in (append (mobs *player-room*) (players *player-room*)))
+;	(when (mudname-equal defender candidate)
+	  
+	
+
+
 (defun command-go-to-direction (direction)
   "Функции перехода по какому-нибудь направлению делаются каррированием этот функции."
   (assert (member direction *exits*))
@@ -55,6 +63,7 @@
 	(if (can-pass exit)
 	    (progn
 	      (deletef (players *player-room*) *player*)
+	      (process-room-triggers *player-room* :player-left-room *player* *player-room* direction)
 	      (player-exited *player-room* *player*)
 	      (setf *player-room* (dest-room exit))
 	      (push *player* (players *player-room*)))

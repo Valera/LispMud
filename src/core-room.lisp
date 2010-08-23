@@ -10,12 +10,20 @@
     (:west :east)
     (:east :west)))
 
+(defun direction-name (direction)
+  (case direction 
+    (:east "восток")
+    (:west "запад")
+    (:south "юг")
+    (:north "север")))
+
 (defclass myroom ()
   ((short-description :accessor short-description :initform "" :initarg :short-description)
    (description :accessor description :initform "" :initarg :description)
    (mobs :accessor mobs :initform nil)
    (players :accessor players :initform nil)
    (items-on-floor :accessor items-on-floor :initform (list (make-instance 'item :name "мочалка") (make-instance 'item :name "кусок мыла")))
+   (triggers :accessor triggers :initform nil)
    (west-exit :accessor west-exit :initform nil :initarg :west-exit)
    (east-exit :accessor east-exit :initform nil :initarg :east-exit)
    (south-exit :accessor south-exit :initform nil :initarg :south-exit)
@@ -94,3 +102,26 @@
 	  (west-exit *player-room*)
 	  (east-exit *player-room*))
   (force-output))
+
+(defgeneric add-trigger (object trigger))
+
+(defmethod add-trigger ((room myroom) trigger)
+  (push trigger (triggers room)))
+
+(defun process-room-triggers (room action-type &rest parameters)
+  (labels ((call-if-matches (trigger)
+	     (print 1)
+	     (destructuring-bind (type trigger-fun action) trigger
+	       (when (and (eql type action-type) (or (not trigger-fun) (apply trigger-fun parameters)))
+		 (apply action parameters))))
+	   (process-trigger-list (trigger-list)
+	     (print 2)
+	     (dolist (trig trigger-list)
+	       (call-if-matches trig))))
+    (process-trigger-list (triggers room))
+#+(or)    (dolist (mob (mobs room))
+      (process-trigger-list (triggers mob)))
+#+(or)    (dolist (item (items-on-floor room))
+      (process-trigger-list (triggers mob)))
+#+(or)    (dolist (player (players room))
+      (process-trigger-list (triggers player)))))

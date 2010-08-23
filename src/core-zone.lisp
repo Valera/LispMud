@@ -110,6 +110,11 @@
 
 ;; Временная функция для отладки. Добавляет в комнату с координатами (1, 1) собаку.
 (defmethod temp-start-work ((zone zone))
+  (setf (triggers (aref (map-array zone) 1 1))
+	(list
+	 (list :player-left-room nil
+	       #'(lambda (player room direction) (send-message-to-players (format nil "~A пошёл на ~A~%" (word-ip player) (direction-name direction))
+								(players room))))))
   (start-work zone))
 
 ;; Закончить работу зоны и все петли событий, чтобы освободить ресурсы.

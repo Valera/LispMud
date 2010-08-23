@@ -17,6 +17,7 @@
 				     (:file "rucase")
 				     (:file "event-timer")
 				     (:file "core-threadvars")
+				     (:file "trigger")
 				     (:file "core-command")
 				     (:file "core-FSM")
 				     (:file "core-items")

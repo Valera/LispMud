@@ -5,6 +5,22 @@
 (in-package :lispmud)
 
 (defvar *user-db* (make-hash-table :test 'equal :synchronized t))
+(defvar *online-users*)
+(defvar *online-users-lock* (make-lock "Lock for the list of online users"))
+
+(defun reset-online-users ()
+  (with-lock-held (*online-users-lock*)
+    (setf *online-users* nil)))
+
+(defun set-user-online (user-name)
+  (with-lock-held (*online-users-lock*)
+    (if (find user-name *online-users* :test 'equal)
+	nil
+	(push user-name *online-users*))))
+
+(defun set-user-offline (user-name)
+  (with-lock-held (*online-users-lock*)
+    (deletef *online-users* user-name :test 'equal)))
 
 (defun valid-new-player-name-p (namestring)
   "Return T if new player name is valid player name, every letter is Russian."
@@ -14,12 +30,6 @@
 (defun can-login (user-name password)
   "Return true if user with given user-name and password exists"
   (string= (gethash user-name *user-db*) password))
-
-;; FIXME
-(defun login (user-name password)
-  "Enter in game"
-  (assert (can-login user-name password))
-  (setf (user-name *thread-vars*) user-name))
 
 (defun user-exists-p (user-name)
   "Check whether user with user-name already exists in database."

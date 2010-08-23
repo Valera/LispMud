@@ -12,3 +12,5 @@
 (defvar *player*      nil "Объект игрока")
 (defvar *player-room* nil "Текущая комната игрока")
 (defvar *player-zone* nil "Текущая зона игрока")
+
+(defvar *zone-list*)

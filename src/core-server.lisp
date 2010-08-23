@@ -23,6 +23,8 @@
   (:documentation "Curried with data read with client read and enqueued in thread pool queue."))
 (defgeneric client-read (client socket)
   (:documentation "Called when data is available in socket"))
+(defgeneric client-disconnect (client)
+  (:documentation "Called when client have disconected."))
 
 ;; Server implementation.
 
@@ -35,6 +37,7 @@
 (defgeneric handle-client-disconnect (server socket)
   (:documentation "Called on client disconnect, removes client from client hash.")
   (:method ((server server) socket)
+    (disconnect (gethash socket (connections server)))
     (remhash socket (connections server))
     (format t "disconnect: ~a ~a~%" server socket)
     (socket-close socket)))
@@ -181,16 +184,25 @@
 	   (with-slots ((fsm register-and-login-fsm)) client
 	     (process-input1 fsm (string-trim '(#\Space #\Newline #\Return) input))
 	     (if (eql (current-state fsm) 'finish-login)
-		 (progn
-		   (setf *player* (make-instance 'player :name (name fsm) :output   *standard-output*))
-		   (setf (player-state client) 'game)
-		   (room-about *player-room*))))
+		 (if (set-user-online (name fsm))
+		     (progn
+		       (setf *player* (make-instance 'player :name (name fsm) :output   *standard-output*))
+		       (setf (player-state client) 'game)
+		       (room-about *player-room*))
+		     (process-input1 fsm "облом"))))
        ;; FIXME: Выход без регистрации.
 	 (error (condition) (format t "Command erred with condition ~a~%" condition))))
       (game
        (handler-case
 	   (progn (exec-command (string-trim '(#\Space #\Newline #\Return) input))
 		  (room-about *player-room*)))))))
+
+(defmethod disconnect ((client client))
+  (with-variables-from (globvars client)
+      (*player-zone* *player-room* *player*)
+    (when (eql (player-state client) 'game)
+      (deletef (players *player-room*) *player*)
+      (set-user-offline (name *player*)))))
 
 ;  (format (out-stream client) "Echo: ~a~%" input))
 

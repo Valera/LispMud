@@ -37,7 +37,7 @@
 (defgeneric handle-client-disconnect (server socket)
   (:documentation "Called on client disconnect, removes client from client hash.")
   (:method ((server server) socket)
-    (disconnect (gethash socket (connections server)))
+    (client-disconnect (gethash socket (connections server)))
     (remhash socket (connections server))
     (format t "disconnect: ~a ~a~%" server socket)
     (socket-close socket)))
@@ -105,7 +105,6 @@
 		    (socket-close s)))
 	     (iter
 	       (iter (for s in (wait-for-input sockets :ready-only t))
-
 		     (handler-case
 			 (if (eq s master-socket)
 			     ;; THEN: we have new connection
@@ -134,10 +133,11 @@
 			     (error "Unknow message ~S in control queue." message)))))))
 	(bt:with-lock-held (connlock)
 	  (iter (for s in sockets)
-		(handle-client-disconnect server s)
+		(unless (eql s master-socket)
+		  (handle-client-disconnect server s))
 		(socket-close s)))))))
 
-(defun run-lispmud (port &key (host "localhost") (n-thread 1))
+(defun run-lispmud (port &key (host #(0 0 0 0)) (n-thread 1))
   (let ((serv (make-instance 'server))
 	(master-socket (socket-listen host port :element-type 'unsigned-byte)))
     (unwind-protect
@@ -197,7 +197,7 @@
 	   (progn (exec-command (string-trim '(#\Space #\Newline #\Return) input))
 		  (room-about *player-room*)))))))
 
-(defmethod disconnect ((client client))
+(defmethod client-disconnect ((client client))
   (with-variables-from (globvars client)
       (*player-zone* *player-room* *player*)
     (when (eql (player-state client) 'game)

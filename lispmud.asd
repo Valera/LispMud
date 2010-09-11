@@ -9,6 +9,7 @@
   :serial t
   :depends-on (:split-sequence :alexandria :iterate :sb-queue 
 			       :bordeaux-threads :usocket :cl-store)
+			       ;:cl-gtk2-gtk :cl-cairo2 :cl-gtk2-cairo)
   :components ((:module "src"
 			:serial t
 			:components ((:file "packages" )

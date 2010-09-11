@@ -131,7 +131,7 @@
 
 (defun init-commands ()
   (init-command-table
-   `(("эхо"  ,#'(lambda (&rest args) (format t "~{|~a| ~}~%" args)))
+   `(("эхо"  ,#'(lambda (&rest args) (format t "~C[34m~{|~a| ~}~%" (code-char 33) args)))
      ("ю" ,#'(lambda () (command-go-to-direction :south)))
      ("с" ,#'(lambda () (command-go-to-direction :north)))
      ("з" ,#'(lambda () (command-go-to-direction :west)))

@@ -85,13 +85,14 @@
 
 (defgeneric room-about (room))
 (defmethod room-about ((room myroom))
+  (format t "~C[34m" (code-char #o33))
   (format t "В комнате ~a~%" (short-description *player-room*))
   (let ((items (items-on-floor room)))
     (if items
 	(if (= (length items) 1)
 	    (format t "На полу лежит ~a.~%" (name (first items)))
 	    (format t "На полу лежат:~%~{  ~a~%~}" (mapcar #'name items)))))
-  (if (mobs room)
+  (when (mobs room)
       (format t "Мобы:~%~{  ~a~%~}" (mobs room)))
   (let ((other-players (remove *player* (players room))))
     (if other-players

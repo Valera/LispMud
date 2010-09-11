@@ -48,37 +48,53 @@
       ((char= char #\Newline)
        (vector-push-extend #\Return buffer)
        (vector-push-extend #\Newline buffer)
-       (stream-write-string stream buffer)
+       (send-string buffer inner-stream)
        (force-output inner-stream)
        (setf (fill-pointer buffer) 0
 	     start-line-p t))
+      ((char= char #\я)
+       (vector-push-extend #\я buffer)
+       (vector-push-extend #\я buffer)
+       (setf start-line-p nil))
       (t
        (vector-push-extend char buffer)
        (setf start-line-p nil)))))
 
 (defun send-string (buffer byte-stream &key (start 0) end)
-;  (format t "sending stream ~s~%" buffer)
   (write-sequence (string-to-octets buffer :external-format :cp1251 :start start :end end)
 		  byte-stream)
   (force-output byte-stream))
 
-;stream-write-string stream string &optional start end
 (defvar *ya-bytes* (string-to-octets "яя" :external-format :cp1251))
 
-;#+nil
 (defmethod stream-write-string ((stream telnet-byte-output-stream) string &optional (start 0) end)
-  (with-slots (buffer columns inner-stream) stream
-    (let ((positions (all-positions #\я string :start start :end end)))
-      (if positions
-	  ;; then: печать кусочков строки, печатая вместо буквы "я" "яя".
-	  ;; Хак для правильной обработки телнетом этой буквы.
-	  (let ((otrezki  (neigbours-list (append `(,start) positions `(,end)))))
-	    (iter (for (start . end) in otrezki)
-		  (unless (first-time-p)
-		    (write-sequence *ya-bytes* inner-stream)
-		    (incf start))
-		  (send-string string inner-stream :start start :end end)))
-	  ;; else: букв я в строке нет, посылаем её целиком.
-	  (send-string string inner-stream :start start :end end))))
-  (setf (start-line-p stream) (char= (last-elt string) #\Newline)))
+  (flet ((substring-length (string start end)
+	   "Return lenght of sting from start to end. End can be nil."
+	   (- (or end (length string))
+	      start)))
+    (with-slots (buffer columns inner-stream start-line-p) stream
+      (let ((positions (all-positions #\я string :start start :end end)))
+	(if positions
+	    ;; then: печать кусочков строки, печатая вместо буквы "я" "яя".
+	    ;; Хак для правильной обработки телнетом этой буквы.
+	    (let ((otrezki  (neigbours-list (append `(,start) positions `(,end)))))
+	      (iter (for (start . end) in otrezki)
+		    (unless (first-time-p)
+		      (vector-push-extend #\я buffer)
+		      (vector-push-extend #\я buffer)
+		      (incf start))
+		    (for len = (substring-length string start end))
+		    (incf (fill-pointer buffer) len)
+		    (replace buffer string :start1 (- (fill-pointer buffer) len)
+			     :start2 start :end2 end)
+		    (send-string buffer inner-stream)))
+	    ;; else: букв я в строке нет, посылаем её целиком.
+	    (if (= 0 (fill-pointer buffer))
+		(send-string string inner-stream :start start :end end)
+		(let ((len (substring-length string start end)))
+		  (incf (fill-pointer buffer) len)
+		  (replace buffer string :start1 (- (fill-pointer buffer) len))
+		  (send-string buffer inner-stream)))))
+      (setf (fill-pointer buffer) 0)
+      (setf start-line-p (char= (last-elt string) #\Newline)))))
 

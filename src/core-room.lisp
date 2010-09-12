@@ -85,8 +85,9 @@
 
 (defgeneric room-about (room))
 (defmethod room-about ((room myroom))
-  (format t "~C[34m" (code-char #o33))
+  (write-string *cc-blue*)
   (format t "В комнате ~a~%" (short-description *player-room*))
+  (write-string *cc-reset*)
   (let ((items (items-on-floor room)))
     (if items
 	(if (= (length items) 1)

@@ -16,6 +16,7 @@
 				     ;; core
 				     (:file "core-utils")
 				     (:file "rucase")
+				     (:file "color-codes")
 				     (:file "event-timer")
 				     (:file "core-threadvars")
 				     (:file "trigger")

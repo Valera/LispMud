@@ -76,7 +76,11 @@
 		 (sb-thread:wait-on-semaphore cmdqueue-sem)))
 	   (shutting-down ()
 	     ;; anything to do here?
-	     #+ nil (error "shitting-down handler-case not implemented")))
+	     (error "shitting-down handler-case not implemented"))
+	   (sb-int:closed-stream-error ()
+	     ;; FIXME: это случается когда provider-thread ещё не успела удалить
+	     ;; сокет и ему пришла новая команда на обработку. В принципе, этой ошибки быть не должно.
+	     ))
       (bt:with-recursive-lock-held ((server-workers-mutex server))
 	(setf (server-workers server) (delete (bt:current-thread) (server-workers server)))
 	(add-worker server 1)))))
@@ -127,7 +131,7 @@
 		       ;; If queue is not emty, disconnet correcponging socket.
 		       (destructuring-bind (message . socket)
 			   (sb-queue:dequeue (ctlqueue server))
-			 (format t "Got (~a ~a) in control queue" message socket)
+			 (format t "Got (~a ~a) in control queue~%" message socket)
 			 (if (eq message 'disconnect-client)
 			     (disconnect-socket socket)
 			     (error "Unknow message ~S in control queue." message)))))))

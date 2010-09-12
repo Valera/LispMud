@@ -124,14 +124,19 @@
   (let ((inventory (inventory *player*)))
     (if inventory
 	(progn
+	  (color *cc-cyan*)
 	  (write-line "Ваш инвентарь:")
 	  (iter (for item in inventory)
-		(format t "  ~a~%" (word-ip item))))
+		(format t "  ~a~%" (word-ip item)))
+	  (color *cc-reset*))
 	(write-line "У вас ничего нет. :("))))
 
 (defun init-commands ()
   (init-command-table
-   `(("эхо"  ,#'(lambda (&rest args) (format t "~C[34m~{|~a| ~}~%" (code-char 33) args)))
+   `(("эхо"  ,#'(lambda (&rest args)
+		  (color *cc-red*)
+		  (format t "~{~a ~}~%" args)
+		  (color *cc-reset*)))
      ("ю" ,#'(lambda () (command-go-to-direction :south)))
      ("с" ,#'(lambda () (command-go-to-direction :north)))
      ("з" ,#'(lambda () (command-go-to-direction :west)))

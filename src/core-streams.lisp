@@ -86,8 +86,8 @@
 		    (for len = (substring-length string start end))
 		    (incf (fill-pointer buffer) len)
 		    (replace buffer string :start1 (- (fill-pointer buffer) len)
-			     :start2 start :end2 end)
-		    (send-string buffer inner-stream)))
+			     :start2 start :end2 end))
+	      (send-string buffer inner-stream))
 	    ;; else: букв я в строке нет, посылаем её целиком.
 	    (if (= 0 (fill-pointer buffer))
 		(send-string string inner-stream :start start :end end)
@@ -97,4 +97,3 @@
 		  (send-string buffer inner-stream)))))
       (setf (fill-pointer buffer) 0)
       (setf start-line-p (char= (last-elt string) #\Newline)))))
-

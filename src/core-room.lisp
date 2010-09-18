@@ -112,12 +112,10 @@
 
 (defun process-room-triggers (room action-type &rest parameters)
   (labels ((call-if-matches (trigger)
-	     (print 1)
 	     (destructuring-bind (type trigger-fun action) trigger
 	       (when (and (eql type action-type) (or (not trigger-fun) (apply trigger-fun parameters)))
 		 (apply action parameters))))
 	   (process-trigger-list (trigger-list)
-	     (print 2)
 	     (dolist (trig trigger-list)
 	       (call-if-matches trig))))
     (process-trigger-list (triggers room))

@@ -189,7 +189,7 @@
       (*standard-output* *player-zone* *player-room* *player*)
     (ecase (player-state client)
       (enter-password
-       (if (string= *enter-password* input)
+       (if (string= *enter-password* (string-trim '(#\Space #\Newline #\Return) input))
 	   (progn
 	     (setf (player-state client) 'login)
 	     (format t "Пароль принят.~%")

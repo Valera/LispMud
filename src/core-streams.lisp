@@ -21,7 +21,7 @@
   ((inner-stream :initarg :stream :reader inner-stream)
    (col-index :initform 0 :accessor col-index-of)
    (start-line-p :initform t :accessor start-line-p)
-   (buffer :initform (make-array 200 :element-type 'character :fill-pointer 0))))
+   (buffer :initform (make-array 500 :element-type 'character :fill-pointer 0))))
      
 (defmethod stream-element-type ((stream telnet-byte-output-stream))
   'character)

@@ -176,8 +176,8 @@
 	(progn
 	  (format t "Введите пароль альфа-версии: ")
 	  (setf (player-state client) 'enter-password))
-	(setf (player-state client) 'login
-	      (register-and-login-fsm client) (make-instance 'register-and-login-fsm)))))
+	(setf (player-state client) 'login))
+    (setf (register-and-login-fsm client) (make-instance 'register-and-login-fsm))))
 
 ;; Temporary *out* string for setting it as *standard-output*
 ;(defparameter *out* (make-array 1000 :fill-pointer 0 :element-type 'character))

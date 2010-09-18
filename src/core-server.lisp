@@ -176,8 +176,8 @@
 	(progn
 	  (format t "Введите пароль альфа-версии: ")
 	  (setf (player-state client) 'enter-password))
-	(setf (player-state client) 'login))
-    (setf (register-and-login-fsm client) (make-instance 'register-and-login-fsm))))
+	(setf (player-state client) 'login
+	      (register-and-login-fsm client) (make-instance 'register-and-login-fsm)))))
 
 ;; Temporary *out* string for setting it as *standard-output*
 ;(defparameter *out* (make-array 1000 :fill-pointer 0 :element-type 'character))
@@ -189,10 +189,11 @@
       (*standard-output* *player-zone* *player-room* *player*)
     (ecase (player-state client)
       (enter-password
-       (if (string= *enter-password* (string-trim '(#\Space #\Newline #\Return) input))
+       (if (string= *enter-password* input)
 	   (progn
 	     (setf (player-state client) 'login)
-	     (format t "Пароль принят.~%"))
+	     (format t "Пароль принят.~%")
+	     (setf  (register-and-login-fsm client) (make-instance 'register-and-login-fsm)))
 	   (format t "Неверный пароль. Повторите ввод: ")))
       (login
        (handler-case

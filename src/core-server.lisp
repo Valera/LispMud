@@ -199,15 +199,18 @@
        (handler-case
 	   (with-slots ((fsm register-and-login-fsm)) client
 	     (process-input1 fsm (string-trim '(#\Space #\Newline #\Return) input))
-	     (if (eql (current-state fsm) 'finish-login)
-		 (if (set-user-online (name fsm))
-		     (progn
-		       (setf *player* (make-instance 'player :name (name fsm) :output   *standard-output*))
-		       (setf (player-state client) 'game)
-		       (room-about *player-room*))
-		     (process-input1 fsm "облом"))))
+	     (when (eql (current-state fsm) 'finish-login)
+	       (setf *player* (make-instance 'player :name (name fsm) :output   *standard-output*))
+	       (if (set-user-online *player*)
+		   (progn
+		     (push *player* (players *player-room*))
+		     (setf (player-state client) 'game)
+		     (room-about *player-room*))
+		   (progn
+		     (process-input1 fsm "облом")
+		     (setf *player* nil)))))
        ;; FIXME: Выход без регистрации.
-	 (error (condition) (format t "Command erred with condition ~a~%" condition))))
+#+nil	 (error (condition) (format t "Command erred with condition ~a~%" condition))))
       (game
        (handler-case
 	   (progn (exec-command (string-trim '(#\Space #\Newline #\Return) input))
@@ -218,7 +221,7 @@
       (*player-zone* *player-room* *player*)
     (when (eql (player-state client) 'game)
       (deletef (players *player-room*) *player*)
-      (set-user-offline (name *player*)))))
+      (set-user-offline *player*))))
 
 ;  (format (out-stream client) "Echo: ~a~%" input))
 

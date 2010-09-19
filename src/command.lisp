@@ -93,15 +93,44 @@
 
 (defun command-map ()
   "Выводит на экран псевдографическую карту текущей зоны."
+  (format t "~%")
   (iter (with map = (map-array *player-zone*))
 	(for y from 0 below (array-dimension map 0))
+	(format t " ")
+	(with string = (make-string-output-stream))
+	(format string " ")
 	(iter (for x from 0 below (array-dimension map 1))
 	      (if (aref map y x)
-		  (if (eql *player-room* (aref map y x))
-		      (format t "@")
-		      (format t "x"))
-		  (format t "-")))
-	(format t "~%")))
+		  (progn 
+		    (if (eql *player-room* (aref map y x))
+			(progn
+			  (color *cc-red*)
+			  (format t "@")
+			  (color *cc-reset*))
+			(format t "#"))
+		    (if (east-exit (aref map y x))
+			(format t "-")
+			(format t " "))
+		    (if (south-exit (aref map y x))
+			(format string "| ")
+			(format string "  ")))
+		  (progn
+		    (format t "  ")
+		    (format string "  "))))
+	(format t "~%")
+	(format string " ~%")
+	(format t "~a" (get-output-stream-string string))))
+
+(defun command-say (&rest words)
+  "ГОВОРИТЬ: ваши слова услышат все в комнате"
+  (iter (for p in (players *player-room*))
+	(format (output p) "~a сказал: \"~{~a~^ ~}\"~%~%" (name *player*) words))
+#+nil  (process-room-triggers *player-room* :player-said *player* *player-room* words))
+
+(defun command-chat (&rest words)
+  "БОЛТАТЬ: ваши слова услышат все игроки в игре"
+  (iter (for p in *online-users*)
+	(format (output p) "~a болтает: \"~{~a~^ ~}\"~%~%" (name *player*) words)))
 
 ;; FIXME: блокировка!
 (defun command-take (&rest item-names)
@@ -142,9 +171,14 @@
   выходы -- перечислить выходы из комнаты
   оглядется -- напечатать подробное описание комнаты
   карта -- напечатать карту зоны
+Работа с вещами:
   взять ВЕЩЬ -- взять ВЕЩЬ с пола
   инвентарь -- напечатать ваши вещи
   склад -- управляет складом
+Общение
+  ГОВОРИТЬ: ваши слова услышат все в комнате
+  БОЛТАТЬ: ваши слова услышат все игроки в игре
+
   конец -- выйти из игры~%~%"))
 
 (defun init-commands ()
@@ -163,5 +197,7 @@
      ("взять" ,'command-take)
      ("инвентарь" ,'command-inventory)
      ("склад" ,'command-store)
+     ("говорить" ,'command-say)
+     ("болтать" ,'command-chat)
      ("команды" ,'command-list-commands)
      ("конец"  ,'command-leave))))

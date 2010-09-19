@@ -70,11 +70,14 @@
   (register-3
    :on-enter (format t "Введите пароль: ")
    :on-input (progn (if (<= 6 (length input) 20)
-			(progn
-			  (format t "Отлично! Вы зарегистрировались, теперь можете начинать игру!~%")
-			  (register-user (name fsm) input)
-			  (next-state finish-login)))
-		    (format t "Пароль должен быть от 6 до 20 символов длинной. Попробуйте ещё раз: ")))
+			(if (register-user (name fsm) input)
+			    (progn
+			      (format t "Отлично! Вы зарегистрировались, теперь можете начинать игру!~%")
+			      (next-state finish-login))
+			    (progn
+			      (format t "Извините, но пользователь с таким именем уже существует. Попробуйте ещё раз~%~%")
+			      (next-state register-2)))
+			(format t "Пароль должен быть от 6 до 20 символов длинной. Попробуйте ещё раз: "))))
   (finish-leave)
   (finish-login
    :on-input (when (string= "облом" input)

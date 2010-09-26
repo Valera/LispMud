@@ -62,6 +62,7 @@
 	    (setf (aref map y x)
 		  (make-instance 'myroom :short-description room-short-description
 				 :description room-long-description
+				 :place-type room-type
 				 :west-exit west-exit :east-exit east-exit
 				 :north-exit north-exit :south-exit south-exit))
 	    (push (aref map y x) entry-rooms)))

@@ -24,5 +24,5 @@
 (defvar *cc-cyan*   (coerce #(#\Esc #\[ #\0 #\3 #\6 #\m) 'string))
 (defvar *cc-lgrey*  (coerce #(#\Esc #\[ #\0 #\3 #\7 #\m) 'string))
 
-(defun color (color-code)
-  (write-string color-code))
+(defun color (color-code &optional (stream *standard-output*))
+  (write-string color-code stream))

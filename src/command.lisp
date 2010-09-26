@@ -130,7 +130,9 @@
 (defun command-chat (&rest words)
   "БОЛТАТЬ: ваши слова услышат все игроки в игре"
   (iter (for p in *online-users*)
-	(format (output p) "~a болтает: \"~{~a~^ ~}\"~%~%" (name *player*) words)))
+	(color *cc-green* (output p))
+	(format (output p) "~a: \"~{~a~^ ~}\"~%~%" (name *player*) words)
+	(color *cc-reset* (output p))))
 
 ;; FIXME: блокировка!
 (defun command-take (&rest item-names)

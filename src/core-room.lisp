@@ -20,6 +20,7 @@
 (defclass myroom ()
   ((short-description :accessor short-description :initform "" :initarg :short-description)
    (description :accessor description :initform "" :initarg :description)
+   (place-type :accessor place-type :initform nil :initarg :place-type)
    (mobs :accessor mobs :initform nil)
    (players :accessor players :initform nil)
    (items-on-floor :accessor items-on-floor :initform (list (make-instance 'item :name "мочалка") (make-instance 'item :name "кусок мыла")))

@@ -2,7 +2,7 @@
 
 (defpackage :lispmud
   (:use :cl :alexandria :split-sequence :usocket :sb-ext ;:sb-bsd-sockets 
-	:sb-gray :iterate :bt); :gtk :cl-cairo2 :cl-gtk2-cairo)
+	:sb-gray :iterate :bt)
   (:shadowing-import-from :sb-ext :with-timeout :timeout :timer)
 ;  (:shadow :action :item)
   (:shadowing-import-from :usocket :socket)

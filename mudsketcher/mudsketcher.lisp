@@ -31,49 +31,68 @@
 (defparameter *selection* '(2 2))
 (defparameter *src-location* (asdf:component-pathname (asdf:find-system :mudsketcher)))
 (defparameter *edited-zone* (lispmud::load-zone (merge-pathnames "content/1.lzon" *src-location*)))
+(defparameter *selected-room* nil)
 
 (defun run-mudsketcher ()
   (setf *selection* '(2 2))
   (within-main-loop
     (let* (x
 	   y
+	   *selected-room*
+	   file-name
+	   ;; GTK variables
 	   (builder (let ((builder (make-instance 'builder)))
                       (builder-add-from-file builder (namestring (merge-pathnames "mudsketcher/mudsketcher.ui" *src-location*)))
 		      builder))
 	   (window (builder-get-object builder "window1"))
+;	   (new-action (builder-get-object builder "new"))
+	   (open-action (builder-get-object builder "open"))
 	   (h-box (builder-get-object builder "hbox1"))
 	   (entry (builder-get-object builder "entry1"))
 	   (text-view (builder-get-object builder "textview1"))
 	   (cw (make-instance 'cairo-w)))
-      (box-pack-start h-box cw)
-      (connect-signal cw "realize"
-		      (lambda (widget)
-			(declare (ignore widget))
-			(pushnew :pointer-motion-mask (gdk-window-events (widget-window cw)))
-			(pushnew :BUTTON-PRESS-MASK (gdk-window-events (widget-window cw)))))
-      (connect-signal cw "motion-notify-event"
-		      (lambda (widget event)
-			(declare (ignore widget))
-			(setf x (event-motion-x event)
-			      y (event-motion-y event))
-			(setf *coord* (list x y))
-			(widget-queue-draw cw)))
-      (connect-signal cw "button_press_event"
-		      (lambda (widget event)
-			(declare (ignore widget))
-			(setf *selection* (list (event-button-x event) (event-button-y event)))
-			(multiple-value-bind (w h) (gdk:drawable-get-size (widget-window cw))
-			  (let ((room (select-room (event-button-x event) (event-button-y event) w h)))
-			    (if room
-				(progn
-				  (setf (entry-text entry) (lispmud::short-description room))
-				  (setf (text-buffer-text (text-view-buffer text-view)) (lispmud::description room)))
-				(progn
-				  (setf (entry-text entry) "")
-				  (setf (text-buffer-text (text-view-buffer text-view)) "")))))
-			(widget-queue-draw cw)))
-      (setf (cairo-w-draw-fn cw) 'draw-zone-map)
-      (widget-show window))))
+      (labels ((cb-open (&rest args) (declare (ignore args))
+                        (let ((d (make-instance 'file-chooser-dialog :action :open :title "Open file")))
+                          (when file-name (setf (file-chooser-filename d) file-name))
+                          (dialog-add-button d "gtk-open" :accept)
+                          (dialog-add-button d "gtk-cancel" :cancel)
+                          (when (eq :accept (dialog-run d))
+                            (setf file-name (file-chooser-filename d)))
+			  (object-destroy d))))
+	(box-pack-start h-box cw)
+	(connect-signal open-action "activate" #'cb-open)
+	(connect-signal cw "realize"
+			(lambda (widget)
+			  (declare (ignore widget))
+			  (pushnew :pointer-motion-mask (gdk-window-events (widget-window cw)))
+			  (pushnew :BUTTON-PRESS-MASK (gdk-window-events (widget-window cw)))))
+	(connect-signal cw "motion-notify-event"
+			(lambda (widget event)
+			  (declare (ignore widget))
+			  (setf x (event-motion-x event)
+				y (event-motion-y event))
+			  (setf *coord* (list x y))
+			  (widget-queue-draw cw)))
+	(connect-signal cw "button_press_event"
+			(lambda (widget event)
+			  (declare (ignore widget))
+			  (setf *selection* (list (event-button-x event) (event-button-y event)))
+			  (multiple-value-bind (w h) (gdk:drawable-get-size (widget-window cw))
+			    (let ((room (select-room (event-button-x event) (event-button-y event) w h)))
+			      (when (and *selected-room* (not (eql room *selected-room*)))
+				(setf (lispmud::short-description *selected-room*) (entry-text entry))
+				(setf (lispmud::description *selected-room*)  (text-buffer-text (text-view-buffer text-view))))
+			      (if room
+				  (progn
+				    (setf *selected-room* room)
+				    (setf (entry-text entry) (lispmud::short-description room))
+				    (setf (text-buffer-text (text-view-buffer text-view)) (lispmud::description room)))
+				  (progn
+				    (setf (entry-text entry) "")
+				    (setf (text-buffer-text (text-view-buffer text-view)) "")))))
+			  (widget-queue-draw cw)))
+	(setf (cairo-w-draw-fn cw) 'draw-zone-map)
+	(widget-show window)))))
 
 (defun select-room (x0 y0 w h)
   (let* ((map (lispmud::map-array *edited-zone*))
@@ -92,36 +111,6 @@
 		    (when (< (hypot (- x0 (x-coord x)) (- y0 (y-coord y))) 20)
 		      (return-from select-room (aref map y x))))))
       nil)))
-
-#+nil
-      (let-ui (gtk-window
-	       :var w
-	       :default-width 300
-	       :default-height 400
-	       :type :toplevel
-	       :title "Cairo drawing"
-	       (v-box
-		(entry :var edit) :expand nil
-		(cairo-w :var cw)))
-	(connect-signal cw "realize"
-			(lambda (widget)
-			  (declare (ignore widget))
-			  (pushnew :pointer-motion-mask (gdk-window-events (widget-window cw)))
-			  (pushnew :BUTTON-PRESS-MASK (gdk-window-events (widget-window cw)))))
-	(connect-signal cw "motion-notify-event"
-			(lambda (widget event)
-			  (declare (ignore widget))
-			  (setf x (event-motion-x event)
-				y (event-motion-y event))
-			  (setf *coord* (list x y))
-			  (widget-queue-draw cw)))
-	(connect-signal cw "button_press_event"
-			(lambda (widget event)
-			  (declare (ignore widget))
-			  (setf *selection* (list (event-button-x event) (event-button-y event)))
-			  (widget-queue-draw cw)))
-	(setf (cairo-w-draw-fn cw) 'draw-zone-map)
-	(widget-show w))
 
 (defparameter *room-size* 20)
 
@@ -211,4 +200,3 @@
 		    (draw-room (* (/ w x-dim) (+ 0.5 x))
 			       (* (/ h y-dim) (+ 0.5 y))
 			       (aref map y x))))))))
-

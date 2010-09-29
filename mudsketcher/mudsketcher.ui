@@ -23,6 +23,7 @@
                       <object class="GtkImageMenuItem" id="imagemenuitem1">
                         <property name="label">gtk-new</property>
                         <property name="visible">True</property>
+                        <property name="related_action">new</property>
                         <property name="use_underline">True</property>
                         <property name="use_stock">True</property>
                       </object>
@@ -31,6 +32,7 @@
                       <object class="GtkImageMenuItem" id="imagemenuitem2">
                         <property name="label">gtk-open</property>
                         <property name="visible">True</property>
+                        <property name="related_action">open</property>
                         <property name="use_underline">True</property>
                         <property name="use_stock">True</property>
                       </object>
@@ -215,5 +217,13 @@
         </child>
       </object>
     </child>
+  </object>
+  <object class="GtkAction" id="new">
+    <property name="label">&#x41D;&#x43E;&#x432;&#x44B;&#x439;</property>
+    <property name="stock_id">gtk-new</property>
+  </object>
+  <object class="GtkAction" id="open">
+    <property name="label">&#x41E;&#x442;&#x43A;&#x440;&#x44B;&#x442;&#x44C;</property>
+    <property name="stock_id">gtk-open</property>
   </object>
 </interface>

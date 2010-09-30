@@ -33,6 +33,8 @@
 (defparameter *edited-zone* (lispmud::load-zone (merge-pathnames "content/1.lzon" *src-location*)))
 (defparameter *selected-room* nil)
 
+(defstruct name-keyword name keyword)
+
 (defun run-mudsketcher ()
   (setf *selection* '(2 2))
   (within-main-loop
@@ -50,6 +52,10 @@
 	   (h-box (builder-get-object builder "hbox1"))
 	   (entry (builder-get-object builder "entry1"))
 	   (text-view (builder-get-object builder "textview1"))
+	   (combo-box (builder-get-object builder "combobox1"))
+	   (model (make-instance 'array-list-store))
+	   (room-types '(:forest :indoors :city))
+	   (room-type-names '("Лес" "Помещение" "Город"))
 	   (cw (make-instance 'cairo-w)))
       (labels ((cb-open (&rest args) (declare (ignore args))
                         (let ((d (make-instance 'file-chooser-dialog :action :open :title "Open file")))
@@ -58,7 +64,41 @@
                           (dialog-add-button d "gtk-cancel" :cancel)
                           (when (eq :accept (dialog-run d))
                             (setf file-name (file-chooser-filename d)))
-			  (object-destroy d))))
+			  (object-destroy d)))
+	       (initialize-model-and-combo-box (m c)
+		 (store-add-column m "gchararray" #'identity)
+		 (iter (for i in room-type-names)
+		       (store-add-item m i))
+		 (let ((renderer (make-instance 'cell-renderer-text :text "A text")))
+		   (cell-layout-pack-start c renderer :expand t)
+		   (cell-layout-add-attribute c renderer "text" 0)))
+	       (room-type-changed (c)
+		 (declare (ignore c))
+		 (if *selected-room*
+		     (setf (lispmud::place-type *selected-room*) (nth (combo-box-active combo-box) room-types)))
+		 (widget-queue-draw cw))
+	       (button-press-event (widget event)
+		 (declare (ignore widget))
+		 (setf *selection* (list (event-button-x event) (event-button-y event)))
+		 (multiple-value-bind (w h) (gdk:drawable-get-size (widget-window cw))
+		   (let ((room (select-room (event-button-x event) (event-button-y event) w h)))
+		     (when (and *selected-room* (not (eql room *selected-room*)))
+		       (setf (lispmud::short-description *selected-room*) (entry-text entry))
+		       (setf (lispmud::description *selected-room*)  (text-buffer-text (text-view-buffer text-view))))
+		     (setf *selected-room* room)
+		     (if room
+			 (progn
+			   (setf (combo-box-active combo-box) (position (lispmud::place-type room) room-types))
+			   (setf (entry-text entry) (lispmud::short-description room))
+			   (setf (text-buffer-text (text-view-buffer text-view)) (lispmud::description room)))
+			 (progn
+			   (setf (combo-box-active combo-box) -1)
+			   (setf (entry-text entry) "")
+			   (setf (text-buffer-text (text-view-buffer text-view)) "")))))
+		 (widget-queue-draw cw)))
+	(initialize-model-and-combo-box model combo-box)
+	(setf (combo-box-model combo-box) model)
+	(connect-signal combo-box "changed" #'room-type-changed)
 	(box-pack-start h-box cw)
 	(connect-signal open-action "activate" #'cb-open)
 	(connect-signal cw "realize"
@@ -73,24 +113,7 @@
 				y (event-motion-y event))
 			  (setf *coord* (list x y))
 			  (widget-queue-draw cw)))
-	(connect-signal cw "button_press_event"
-			(lambda (widget event)
-			  (declare (ignore widget))
-			  (setf *selection* (list (event-button-x event) (event-button-y event)))
-			  (multiple-value-bind (w h) (gdk:drawable-get-size (widget-window cw))
-			    (let ((room (select-room (event-button-x event) (event-button-y event) w h)))
-			      (when (and *selected-room* (not (eql room *selected-room*)))
-				(setf (lispmud::short-description *selected-room*) (entry-text entry))
-				(setf (lispmud::description *selected-room*)  (text-buffer-text (text-view-buffer text-view))))
-			      (if room
-				  (progn
-				    (setf *selected-room* room)
-				    (setf (entry-text entry) (lispmud::short-description room))
-				    (setf (text-buffer-text (text-view-buffer text-view)) (lispmud::description room)))
-				  (progn
-				    (setf (entry-text entry) "")
-				    (setf (text-buffer-text (text-view-buffer text-view)) "")))))
-			  (widget-queue-draw cw)))
+	(connect-signal cw "button_press_event" #'button-press-event)
 	(setf (cairo-w-draw-fn cw) 'draw-zone-map)
 	(widget-show window)))))
 

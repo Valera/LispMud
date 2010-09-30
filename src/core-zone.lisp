@@ -44,6 +44,28 @@
     (case message
       (:mob-activity ()))))
 
+(defun save-zone (zone filename)
+  (with-open-file (stream filename :direction :output)
+    (let ((map-array (map-array zone)))
+      (pprint
+       (list :zone-name (name zone)    :mobs-spec (mobs-spec zone)
+	     :zone-size (array-dimensions map-array)
+	     :zone-rooms
+	     (iter (for y from 0 below (array-dimension map-array 0))
+		   (nconcing
+		    (iter (for x from 0 below (array-dimension map-array 1))
+			  (for r = (aref map-array y x))
+			  (when r
+			    (collect (list :room-short-description (short-description r)
+					   :room-long-description (description r)
+					   :room-flags ()
+					   :room-type (place-type r)
+					   :west-exit (west-exit r)
+					   :east-exit (east-exit r)
+					   :north-exit (north-exit r)
+					   :south-exit (south-exit r))))))))
+       stream))))
+
 (defun load-zone (filename)
   (with-open-file (stream filename)
     (destructuring-bind (&key zone-name zone-rooms mobs-spec

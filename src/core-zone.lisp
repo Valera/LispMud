@@ -45,7 +45,7 @@
       (:mob-activity ()))))
 
 (defun save-zone (zone filename)
-  (with-open-file (stream filename :direction :output)
+  (with-open-file (stream filename :direction :output :if-exists :overwrite)
     (let ((map-array (map-array zone)))
       (pprint
        (list :zone-name (name zone)    :mobs-spec (mobs-spec zone)
@@ -56,14 +56,21 @@
 		    (iter (for x from 0 below (array-dimension map-array 1))
 			  (for r = (aref map-array y x))
 			  (when r
-			    (collect (list :room-short-description (short-description r)
-					   :room-long-description (description r)
-					   :room-flags ()
-					   :room-type (place-type r)
-					   :west-exit (west-exit r)
-					   :east-exit (east-exit r)
-					   :north-exit (north-exit r)
-					   :south-exit (south-exit r))))))))
+			    (with-accessors ((west-exit west-exit) (east-exit east-exit)
+					     (south-exit south-exit) (north-exit north-exit))
+				r ;(west-exit east-exit north-exit south-exit) r
+			      (flet ((exit-sexpr (room-on-exit)
+				       (when room-on-exit
+					 (list :exit-description (short-description (dest-room room-on-exit)) :door nil))))
+				(collect (list :room-short-description (short-description r)
+					       :room-long-description (description r)
+					       :room-flags ()
+					       :room-type (place-type r)
+					       :coord (list x y)
+					       :west-exit (exit-sexpr west-exit)
+					       :east-exit (exit-sexpr east-exit)
+					       :north-exit (exit-sexpr north-exit)
+					       :south-exit (exit-sexpr south-exit))))))))))
        stream))))
 
 (defun load-zone (filename)

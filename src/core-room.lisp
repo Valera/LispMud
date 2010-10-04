@@ -69,6 +69,10 @@
   "Returns value of exit slot for given direction."
   (slot-value room (exit-slot-for-direction direction)))
 
+(defgeneric (setf exit) (value room direction)
+  (:method (value (room myroom) direction)
+    (setf (slot-value room (exit-slot-for-direction direction)) value)))
+
 (defun dx-for-direction (direction)
   "Returns shift in X coordinate for moving in given direction."
   (ecase direction
@@ -107,7 +111,6 @@
   (force-output))
 
 (defgeneric add-trigger (object trigger))
-
 (defmethod add-trigger ((room myroom) trigger)
   (push trigger (triggers room)))
 

@@ -102,27 +102,23 @@
 (defun link-rooms (zone-map)
   (pvalue "link-rooms" zone-map)
   (iter
-    (with size-x = (array-dimension zone-map 0))
-    (with size-y = (array-dimension zone-map 1))
     (for (y x room) in-matrix zone-map)
     (if room
 	(dolist (direction *exits*)
-	  (let (x1 y1 room1)
-	    (if (exit room direction)
-		(if (or (>= (setf x1 (+ (dx-for-direction direction) x)) size-x)
-			(> 0 x1); x)
-			(>= (setf y1 (+ (dy-for-direction direction) y)) size-y)
-			(> 0 y1); y)
-			(not (setf room1 (aref zone-map y1 x1)))
-			(not (exit room1 (reverse-direction direction))))
+	  (if (exit room direction)
+	      (let ((x1 (+ x (dx-for-direction direction)))
+		    (y1 (+ y (dy-for-direction direction)))
+		    room1)
+		(if (and (array-in-bounds-p zone-map y1 x1)
+			 (setf room1 (aref zone-map y1 x1))
+			 (exit room1 (reverse-direction direction)))
+		    (progn
+		      (setf (slot-value room (exit-slot-for-direction direction))
+			    (make-instance 'exit :dest-room room1)))
 		    (progn
 		      (pvalue x y x1 y1 room1)
 		      (format t "Warning: ~a exit in room (~a, ~a) doen't have pair~%"
-			      direction x y))
-		    (progn
-					;(pvalue x y x1 y1 room1)
-		      (setf (slot-value room (exit-slot-for-direction direction))
-			    (make-instance 'exit :dest-room room1))))))))))
+			      direction x y)))))))))
 
 ;; Инициализировать зону.
 (defgeneric start-work (zone))

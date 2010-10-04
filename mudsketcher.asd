@@ -10,6 +10,7 @@
   :depends-on (:lispmud :split-sequence :alexandria :iterate :cl-gtk2-gtk :cl-cairo2 :cl-gtk2-cairo)
   :components ((:module "mudsketcher"
 			:serial t
-			:components ((:file "packages" )
+			:components ((:file "packages")
+				     (:file "canvas")
 				     (:file "mudsketcher")))))
 

@@ -28,21 +28,25 @@
 (defstruct cairo-fn name fn)
 
 (defvar *coord* '(0 0))
-(defparameter *selection* '(2 2))
 (defparameter *src-location* (asdf:component-pathname (asdf:find-system :mudsketcher)))
 (defparameter *edited-zone* (lispmud::load-zone (merge-pathnames "content/1.lzon" *src-location*)))
 (defparameter *selected-room* nil)
 
 (defstruct name-keyword name keyword)
 
+(defun hypot (x y)
+  (sqrt (+ (* x x) (* y y))))
+
 (defun run-mudsketcher ()
-  (setf *selection* '(2 2))
   (within-main-loop
     (let* (x
 	   y
 	   *selected-room*
 	   selected-room-x
 	   selected-room-y
+	   (last-click-time -10000)
+	   (last-click-x -10000)
+	   (last-click-y -10000)
 	   file-name
 	   ;; GTK variables
 	   (builder (let ((builder (make-instance 'builder)))
@@ -64,7 +68,7 @@
 	   (room-types '(:forest :indoors :city))
 	   (room-type-names '("Лес" "Помещение" "Город"))
 	   (cw (make-instance 'cairo-w)))
-      (labels (#+nil (debug-out (str)
+      (labels ((debug-out (str)
 		 (setf (text-buffer-text (text-view-buffer text-view)) str))
 	       (initialize-new-dialog (d)
 		 (let (;(entry (builder-get-object builder "zone-name-entry"))
@@ -105,7 +109,6 @@
 									    :initial-element nil)))
 		   (widget-hide d))
 		 (widget-queue-draw cw))
-		   
 	       (cb-open (&rest args) (declare (ignore args))
                         (let ((d (make-instance 'file-chooser-dialog :action :open :title "Open file")))
                           (when file-name (setf (file-chooser-filename d) file-name))
@@ -128,24 +131,38 @@
 		 (widget-queue-draw cw))
 	       (button-press-event (widget event)
 		 (declare (ignore widget))
-		 (setf *selection* (list (event-button-x event) (event-button-y event)))
-		 (multiple-value-bind (w h) (gdk:drawable-get-size (widget-window cw))
-		   (multiple-value-bind (room room-x room-y) (select-room (event-button-x event) (event-button-y event) w h)
-		     (when (and *selected-room* (not (eql room *selected-room*)))
-		       (setf (lispmud::short-description *selected-room*) (entry-text entry))
-		       (setf (lispmud::description *selected-room*)  (text-buffer-text (text-view-buffer text-view))))
-		     (setf *selected-room* room
-			   selected-room-x room-x
-			   selected-room-y room-y)
-		     (if room
-			 (progn
-			   (setf (combo-box-active combo-box) (position (lispmud::place-type room) room-types))
-			   (setf (entry-text entry) (lispmud::short-description room))
-			   (setf (text-buffer-text (text-view-buffer text-view)) (lispmud::description room)))
-			 (progn
-			   (setf (combo-box-active combo-box) -1)
-			   (setf (entry-text entry) "")
-			   (setf (text-buffer-text (text-view-buffer text-view)) "")))))
+		 (let ((click-x (event-button-x event))
+		       (click-y (event-button-y event))
+		       (click-time (event-button-time event))
+		       new-selected-room)
+		   (multiple-value-bind (w h) (gdk:drawable-get-size (widget-window cw))
+		     (if (and (< (- click-time last-click-time) 1000) (= click-x last-click-x) (= click-y last-click-y)
+			      (not (select-room click-x click-y w h)))
+			 ;; double click
+			 (destructuring-bind (x y) (nearest-cell-to-click (event-button-x event) (event-button-y event) w h)
+			   (setf new-selected-room
+				 (setf (aref (lispmud::map-array *edited-zone*) y x) (make-instance 'myroom :place-type :forest))))
+			 (multiple-value-bind (room room-x room-y)
+			     (select-room (event-button-x event) (event-button-y event) w h)
+			   (when (and *selected-room* (not (eql room *selected-room*)))
+			     (setf (lispmud::short-description *selected-room*) (entry-text entry))
+			     (setf (lispmud::description *selected-room*) (text-buffer-text (text-view-buffer text-view))))
+			   (setf *selected-room* room
+				 selected-room-x room-x
+				 selected-room-y room-y))))
+		   (if *selected-room*
+		       (progn
+			 (setf (combo-box-active combo-box) (position (place-type *selected-room*) room-types))
+			 (setf (entry-text entry) (LispMud::short-description *selected-room*))
+			 (setf (text-buffer-text (text-view-buffer text-view)) (description *selected-room*)))
+		       (progn
+			 (setf (combo-box-active combo-box) -1)
+			 (setf (entry-text entry) "")
+			 (setf (text-buffer-text (text-view-buffer text-view)) "")))
+		   (setf last-click-time click-time
+			 last-click-x click-x
+			 last-click-y click-y))
+;		 (debug-out (format nil "~a" event)) ;; ~~~~
 		 (widget-queue-draw cw))
 	       (disconnect-exits (&rest args)
 		 (declare (ignore args))
@@ -162,16 +179,15 @@
 ;			       (setf (exit *selected-room* i) nil)))
 
 		       (dolist (direction *exits*)
-			 (if (exit *selected-room* direction)
-			     (let ((x1 (+ selected-room-x (dx-for-direction direction)))
-				   (y1 (+ selected-room-y (dy-for-direction direction)))
-				   (zone-map (lispmud::map-array *edited-zone*))
-				   room1)
-			       (if (and (array-in-bounds-p zone-map y1 x1)
-					(setf room1 (aref zone-map y1 x1)))
-				   (setf (exit room1 (reverse-direction direction)) (make-instance 'exit :dest-room *selected-room*)
-					 (exit *selected-room* direction) (make-instance 'exit :dest-room room1)))))))
-		   (widget-queue-draw cw)))			
+			 (let ((x1 (+ selected-room-x (dx-for-direction direction)))
+			       (y1 (+ selected-room-y (dy-for-direction direction)))
+			       (zone-map (lispmud::map-array *edited-zone*))
+			       room1)
+			   (if (and (array-in-bounds-p zone-map y1 x1)
+				    (setf room1 (aref zone-map y1 x1)))
+			       (setf (exit room1 (reverse-direction direction)) (make-instance 'exit :dest-room *selected-room*)
+				     (exit *selected-room* direction) (make-instance 'exit :dest-room room1)))))))
+		 (widget-queue-draw cw))			
 )
 	(initialize-new-dialog (builder-get-object builder "dialog1"))
 	(initialize-model-and-combo-box model combo-box)
@@ -209,7 +225,7 @@
 	(setf (cairo-w-draw-fn cw) 'draw-zone-map)
 	(widget-show window)))))
 
-(defun select-room (x0 y0 w h)
+(defun nearest-cell-to-click (x0 y0 w h)
   (let* ((map (lispmud::map-array *edited-zone*))
 	 (x-dim (array-dimension map 1))
 	 (w (* x-dim (round w (* 2 x-dim)) 2))
@@ -218,14 +234,18 @@
 	 (h (* y-dim (round h (* 2 y-dim)) 2))
 	 (y-grid-step (/ h y-dim)))
     (flet ((x-coord (x) (* x-grid-step (+ 0.5 x)))
-	   (y-coord (y) (* y-grid-step (+ 0.5 y)))
-	   (hypot (x y) (sqrt (+ (* x x) (* y y)))))
+	   (y-coord (y) (* y-grid-step (+ 0.5 y))))
       (iter (for x from 0 below x-dim)
 	    (iter (for y from 0 below y-dim)
-		  (when (aref map y x)
-		    (when (< (hypot (- x0 (x-coord x)) (- y0 (y-coord y))) 20)
-		      (return-from select-room (values (aref map y x) x y))))))
-      nil)))
+		  (when (< (hypot (- x0 (x-coord x)) (- y0 (y-coord y))) 20)
+		    (return-from nearest-cell-to-click (list x y))))))
+    '(nil nil)))
+
+(defun select-room (x0 y0 w h)
+  (destructuring-bind (x y) (nearest-cell-to-click x0 y0 w h)
+    (let ((map (lispmud::map-array *edited-zone*)))
+      (when (and x y (aref map y x))
+	(values (aref map y x) x y)))))
 
 (defparameter *room-size* 20)
 
@@ -282,8 +302,7 @@
 	 (h (* y-dim (round h (* 2 y-dim)) 2))
 	 (y-grid-step (/ h y-dim)))
     (flet ((x-coord (x) (* x-grid-step (+ 0.5 x)))
-	   (y-coord (y) (* y-grid-step (+ 0.5 y)))
-	   (hypot (x y) (sqrt (+ (* x x) (* y y)))))
+	   (y-coord (y) (* y-grid-step (+ 0.5 y))))
       (set-source-color cl-colors:+grey80+)
       (iter (for x from 0 to x-dim)
 	    (move-to (x-coord x) (y-coord 0))
@@ -319,7 +338,7 @@
 		    (when (< (hypot (- x-mouse (x-coord x)) (- y-mouse (y-coord y))) 20)
 		      (draw-room-selection (x-coord x) (y-coord y)))
 		    (set-source-color cl-colors:+grey25+)
-		    (when (and *selection* (< (hypot (- (first *selection*) (x-coord x)) (- (second *selection*) (y-coord y))) 20))
+		    (when (and (eql *selected-room* (aref map y x)))
 		      (draw-room-selection (x-coord x) (y-coord y)))
 		    (draw-room (* (/ w x-dim) (+ 0.5 x))
 			       (* (/ h y-dim) (+ 0.5 y))

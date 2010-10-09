@@ -17,4 +17,10 @@
    exit dest-room can-pass passage door hotel portal
    dx-for-direction dy-for-direction
    room-about message-to-visitors
-   add-trigger process-room-triggers))
+   add-trigger process-room-triggers
+   ;; core-zone.lisp
+   #:zone
+   #:name #:id #:map-array #:entry-rooms #:mobs-spec #:mobs-counters
+   #:mobs-max-numbers #:lock #:message-queue
+   #:queuue-mesg #:get-mesg #:event-loop #:save-zone #:load-zone #:link-rooms
+   #:unlink #:unlink-orphaned-rooms #:start-work #:end-work))

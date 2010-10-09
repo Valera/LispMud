@@ -45,7 +45,7 @@
       (:mob-activity ()))))
 
 (defun save-zone (zone filename)
-  (with-open-file (stream filename :direction :output :if-exists :overwrite)
+  (with-open-file (stream filename :direction :output :if-exists :supersede)
     (let ((map-array (map-array zone)))
       (pprint
        (list :zone-name (name zone)    :mobs-spec (mobs-spec zone)
@@ -119,6 +119,23 @@
 		      (pvalue x y x1 y1 room1)
 		      (format t "Warning: ~a exit in room (~a, ~a) doen't have pair~%"
 			      direction x y)))))))))
+
+(defun unlink (room)
+  "Отключить выходы между этой комнатой и соседями и наоборот."
+  (iter (for i in *exits*)
+	(when (exit room i)
+	  (setf (exit (dest-room (exit room i)) (reverse-direction i)) nil)
+	  (setf (exit room i) nil))))
+
+(defun unlink-orphaned-rooms (zone)
+  (iter (with room-list = (iter (for (y x room) in-matrix (map-array zone))
+				(when room
+				  (collect room))))
+	(for room in room-list)
+	(iter (for i in *exits*)
+	      (when (and (exit room i)
+			 (not (find (dest-room (exit room i)) room-list)))
+		(setf (exit room i) nil)))))
 
 ;; Инициализировать зону.
 (defgeneric start-work (zone))

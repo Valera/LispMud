@@ -11,6 +11,6 @@
   :components ((:module "mudsketcher"
 			:serial t
 			:components ((:file "packages")
-				     (:file "canvas")
-				     (:file "mudsketcher")))))
+				     (:file "mudsketcher")
+				     (:file "canvas")))))
 

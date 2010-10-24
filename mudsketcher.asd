@@ -12,5 +12,6 @@
 			:serial t
 			:components ((:file "packages")
 				     (:file "mudsketcher")
-				     (:file "canvas")))))
+				     (:file "canvas")
+				     (:file "zone-canvas")))))
 

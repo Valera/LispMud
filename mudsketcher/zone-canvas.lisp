@@ -110,21 +110,5 @@
                 (drawing-area :var drawing-area)))
 	(let ((canvas (make-instance 'canvas :default-width 200 :default-height 200
 				     :layers (make-layers *edited-zone* 200 200))))
-	  (connect-canvas-signals canvas drawing-area)
-#|	  (connect-signal cw "realize"
-			  (lambda (widget)
-			    (declare (ignore widget))
-			    (pushnew :pointer-motion-mask (gdk-window-events (widget-window cw)))
-			    (pushnew :button-press-mask (gdk-window-events (widget-window cw)))))
-	  (connect-signal cw "button_press_event" #'(lambda (widget event)
-						      (handle-button-press canvas event 200 200)
-						      (widget-queue-draw widget)))
-	  (connect-signal cw "motion-notify-event" #'(lambda (widget event &rest args)
-						       (declare (ignore args))
-						       (handle-pointer-move canvas event 200 200)
-						       (widget-queue-draw widget)))
-|#
-#+nil	  (setf (cairo-w-draw-fn cw)
-		#'(lambda (w h)
-		    (cairo-draw canvas w h))))
+	  (connect-canvas-signals canvas drawing-area))
         (widget-show w)))))

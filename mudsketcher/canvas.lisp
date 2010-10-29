@@ -14,8 +14,8 @@
 (defstruct canvas-item 
   x y draw-obj)
 
-(defgeneric render-item (item x y mode selected-p hover-p &key data))
-(defgeneric move-item (imem x y))
+(defgeneric render-item (canvas item x y mode selected-p hover-p &key data))
+(defgeneric move-item (canvas imem x y))
 (defgeneric bound-rect (item))
 
 (defgeneric cairo-draw (canvas width height &optional context)
@@ -30,7 +30,7 @@
 			(y (canvas-item-y item)))
 		    (typecase draw-obj
 		      (function (funcall draw-obj x y w h))
-		      (otherwise (render-item draw-obj x y :normal
+		      (otherwise (render-item c draw-obj x y :normal
 					      (eql (active-item c) item) (eql (hover-item c) item))))))))))
 
 (defgeneric handle-button-press (canvas event width height)
@@ -75,9 +75,10 @@
 					     (- pointer-y (second dsp)))))))
 	      (setf drag-mode-p t)
 	      (destructuring-bind (x y)
-		  (move-item (canvas-item-draw-obj active) pointer-x pointer-y)
-		(setf (canvas-item-x active) x
-		      (canvas-item-y active) y))))
+		  (move-item c (canvas-item-draw-obj active) pointer-x pointer-y)
+		(if (and x y)
+		    (setf (canvas-item-x active) x
+			  (canvas-item-y active) y)))))
 	  ;; THEN: Trying to hover over an item.
 	  (progn
 	    (setf (drag-mode-p c) nil)

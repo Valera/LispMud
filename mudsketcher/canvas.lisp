@@ -1,7 +1,8 @@
 (in-package :mudsketcher)
 
 (defclass canvas ()
-  ((layers :initform nil :accessor layers :initarg :layers)
+  ((drawing-area :accessor drawing-area)
+   (layers :initform nil :accessor layers :initarg :layers)
    (last-click-time :initform -1000000 :accessor last-click-time)
    (active-item :initform nil :accessor active-item)
    (hover-item :initform nil :accessor hover-item)
@@ -9,7 +10,9 @@
    (default-height :initarg :default-height :accessor default-height)
    (scaling :initform 1.0 :accessor scaling)
    (drag-start-pos :initform nil :accessor drag-start-pos)
-   (drag-mode-p :initform nil :accessor drag-mode-p)))
+   (drag-mode-p :initform nil :accessor drag-mode-p)
+   (select-cb :initform nil :initarg :select-cb :accessor select-cb)
+   (unselect-cb :initform nil :initarg :unselect-cb :accessor unselect-cb)))
 
 (defstruct canvas-item 
   x y draw-obj)
@@ -17,6 +20,7 @@
 (defgeneric render-item (canvas item x y mode selected-p hover-p &key data))
 (defgeneric move-item (canvas imem x y))
 (defgeneric bound-rect (item))
+(defgeneric full-update (canvas))
 
 (defgeneric cairo-draw (canvas width height &optional context)
   (:method (c w h &optional (context *context*))
@@ -50,12 +54,18 @@
 			       (destructuring-bind (br-x br-y br-w br-h) (bound-rect draw-obj)
 				 (and (< (+ x br-x) click-x (+ x br-x br-w))
 				      (< (+ y br-y) click-y (+ y br-y br-h)))))
+		      (if (and (active-item c) (unselect-cb c))
+			  (funcall (unselect-cb c) (canvas-item-draw-obj (active-item c))))
 		      (setf (active-item c) item)
+		      (if (select-cb c)
+			  (funcall (select-cb c) draw-obj))
 		      (setf (drag-start-pos c) (list click-x click-y))
 		      #+nil		      (ecase callback-type
 						(:on-2click (funcall on-2click draw-plist)) ; Double click.
 						(:on-click  (funcall on-click draw-plist))) ; Single click.
 		      (return-from handle-button-press item)))))
+      (when (and (active-item c) (unselect-cb c))
+	(funcall (unselect-cb c) (canvas-item-draw-obj (active-item c))))
       (setf (active-item c) nil)
       (setf (drag-start-pos c) (list click-x click-y))
       nil)))
@@ -96,6 +106,7 @@
 	    (setf (hover-item c) nil))))))
 
 (defun connect-canvas-signals (canvas drawing-area)
+  (setf (drawing-area canvas) drawing-area)
   (connect-signal drawing-area "realize"
 		  #'(lambda (widget)
 		      (declare (ignore widget))

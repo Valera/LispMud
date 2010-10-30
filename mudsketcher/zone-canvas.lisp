@@ -92,20 +92,27 @@
 (defun round-to-array (x step)
   (round (- x (/ step 2)) step))
 
+(defun array-coords-to-canvas (canvas x y)
+  (let ((x-step (x-grid-step canvas))
+	(y-step (y-grid-step canvas)))
+    (list (+ (/ x-step 2) (* x-step x))
+	  (+ (/ y-step 2) (* y-step y)))))
+
 (defun indexes-in-array (array element &key (test 'eql))
   (dotimes (y (array-dimension array 0))
     (dotimes (x (array-dimension array 1))
       (when (funcall test (aref array y x) element)
 	(return-from indexes-in-array (list y x)))))
   nil)
-	
 
 (defmethod move-item (canvas (room myroom) x y)
   (unlink room)
   (regenerate-exits canvas)
-  (let ((map (map-array (zone canvas)))
-	(array-x (round-to-array x (x-grid-step canvas)))
-	(array-y (round-to-array y (y-grid-step canvas))))
+  (let* ((map (map-array (zone canvas)))
+	 (array-x (clamp (round-to-array x (x-grid-step canvas))
+			 0 (1- (array-dimension map 1))))
+	 (array-y (clamp (round-to-array y (y-grid-step canvas))
+			 0 (1- (array-dimension map 0)))))
     (destructuring-bind (old-array-y old-array-x)
 	(indexes-in-array map room)
       (if (not (aref map array-y array-x))
@@ -115,12 +122,10 @@
 					;	      selected-room-x new-x
 					;	      selected-room-y new-y
 		  )
-	    (list (round-to x (x-grid-step canvas))
-		  (round-to y (y-grid-step canvas))))
+	    (array-coords-to-canvas canvas array-x array-y))
 	  (list nil nil)))))
 
-
-(defmethod initialize-instance :after ((canvas zone-canvas) &key &allow-other-keys)
+(defmethod full-update ((canvas zone-canvas))
   (let* ((zone (zone canvas))
 	 (w (default-width canvas))
 	 (h (default-height canvas))
@@ -163,7 +168,13 @@
 					    :draw-obj (aref map y x))
 			  rooms-layer))))
       (setf (layers canvas)
-	    (list :bg-layer bg-layer :exits-layer exits-layer :rooms-layer rooms-layer)))))
+	    (list :bg-layer bg-layer :exits-layer exits-layer :rooms-layer rooms-layer))))
+  (if (slot-boundp canvas 'drawing-area)
+      (widget-queue-draw (drawing-area canvas))))
+
+
+(defmethod initialize-instance :after ((canvas zone-canvas) &key &allow-other-keys)
+  (full-update canvas))
 
 (defun run-canvas-example ()
   (within-main-loop

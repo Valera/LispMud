@@ -3,7 +3,6 @@
 (defclass canvas ()
   ((drawing-area :accessor drawing-area)
    (layers :initform nil :accessor layers :initarg :layers)
-   (last-click-time :initform -1000000 :accessor last-click-time)
    (active-item :initform nil :accessor active-item)
    (hover-item :initform nil :accessor hover-item)
    (default-width :initarg :default-width :accessor default-width)
@@ -21,6 +20,7 @@
 (defgeneric move-item (canvas imem x y))
 (defgeneric bound-rect (item))
 (defgeneric full-update (canvas))
+(defgeneric handle-double-click (canvas x y))
 
 (defgeneric cairo-draw (canvas width height &optional context)
   (:method (c w h &optional (context *context*))
@@ -41,9 +41,7 @@
   (:method ((c canvas) event w h)
     (let* ((scale (scaling c))
 	   (click-x (/ (event-button-x event) scale))
-	   (click-y (/ (event-button-y event) scale))
-	   #+nil	   (click-time (event-button-time event))
-	   #+nil	   (callback-type (if (< (- click-time (last-click-time c)) 1000) :on-2click :on-click)))
+	   (click-y (/ (event-button-y event) scale)))
       (setf (drag-mode-p c) nil)
       (iter (for layer in (reverse (layers c)) by #'cddr)
 	    (iter (for item in layer)
@@ -60,14 +58,13 @@
 		      (if (select-cb c)
 			  (funcall (select-cb c) draw-obj))
 		      (setf (drag-start-pos c) (list click-x click-y))
-		      #+nil		      (ecase callback-type
-						(:on-2click (funcall on-2click draw-plist)) ; Double click.
-						(:on-click  (funcall on-click draw-plist))) ; Single click.
 		      (return-from handle-button-press item)))))
       (when (and (active-item c) (unselect-cb c))
 	(funcall (unselect-cb c) (canvas-item-draw-obj (active-item c))))
       (setf (active-item c) nil)
-      (setf (drag-start-pos c) (list click-x click-y))
+      (if (eql :2button-press (event-button-type event))
+	  (handle-double-click c click-x click-y)
+	  (setf (drag-start-pos c) (list click-x click-y)))
       nil)))
 
 (defgeneric handle-pointer-move (canvas event width height)

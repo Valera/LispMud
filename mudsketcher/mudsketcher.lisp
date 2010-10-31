@@ -129,42 +129,6 @@
 		       (combo-box-active combo-box) (position (place-type room) room-types)
 		       (entry-text entry) ""
 		       (text-buffer-text (text-view-buffer text-view)) ""))
-#+nil	       (button-press-event (widget event)
-		 (declare (ignore widget))
-		 (let ((click-x (event-button-x event))
-		       (click-y (event-button-y event))
-		       (click-time (event-button-time event))
-		       new-selected-room)
-		   (multiple-value-bind (w h) (gdk:drawable-get-size (widget-window drawing-area))
-		     (if (and (< (- click-time last-click-time) 1000) (= click-x last-click-x) (= click-y last-click-y)
-			      (not (select-room click-x click-y w h)))
-			 ;; THEN: double click
-			 (destructuring-bind (x y) (nearest-cell-to-point (event-button-x event) (event-button-y event) w h)
-			   (setf new-selected-room
-				 (setf (aref (lispmud::map-array *edited-zone*) y x) (make-instance 'myroom :place-type :forest))))
-			 ;; ELSE: single click
-			 (multiple-value-bind (room room-x room-y)
-			     (select-room (event-button-x event) (event-button-y event) w h)
-			   (when (and *selected-room* (not (eql room *selected-room*)))
-			     (setf (lispmud::short-description *selected-room*) (entry-text entry))
-			     (setf (lispmud::description *selected-room*) (text-buffer-text (text-view-buffer text-view))))
-			   (setf *selected-room* room
-				 selected-room-x room-x
-				 selected-room-y room-y))))
-		   (if *selected-room*
-		       (progn
-			 (setf (combo-box-active combo-box) (position (place-type *selected-room*) room-types))
-			 (setf (entry-text entry) (LispMud::short-description *selected-room*))
-			 (setf (text-buffer-text (text-view-buffer text-view)) (description *selected-room*)))
-		       (progn
-			 (setf (combo-box-active combo-box) -1)
-			 (setf (entry-text entry) "")
-			 (setf (text-buffer-text (text-view-buffer text-view)) "")))
-		   (setf last-click-time click-time
-			 last-click-x click-x
-			 last-click-y click-y))
-;		 (debug-out (format nil "~a" event)) ;; ~~~~
-		 (widget-queue-draw drawing-area))
 	       (disconnect-exits (&rest args)
 		 (declare (ignore args))
 		 (when (active-item canvas)
@@ -200,8 +164,7 @@
 	(connect-signal disconnect-action "activate" #'disconnect-exits)
 #+nil	(connect-signal window "key-press-event"
 			(lambda (&rest args)
-			  (setf (text-buffer-text (text-view-buffer text-view))
-				(format nil "~{~a ~}" args))))
+				(format *myout* "~{~a~%~}~%" args)))
 	(connect-canvas-signals canvas drawing-area)
 	(setf (select-cb canvas) #'room-select)
 	(setf (unselect-cb canvas) #'room-unselect)

@@ -125,6 +125,16 @@
 	    (array-coords-to-canvas canvas array-x array-y))
 	  (list nil nil)))))
 
+(defmethod handle-double-click ((canvas zone-canvas) x y)
+  (let* ((map (map-array (zone canvas)))
+	 (array-x (clamp (round-to-array x (x-grid-step canvas))
+			 0 (1- (array-dimension map 1))))
+	 (array-y (clamp (round-to-array y (y-grid-step canvas))
+			 0 (1- (array-dimension map 0)))))
+    (unless (aref map array-y array-x)
+      (setf (aref map array-y array-x) (make-instance 'myroom :place-type :forest))
+      (full-update canvas))))
+
 (defmethod full-update ((canvas zone-canvas))
   (let* ((zone (zone canvas))
 	 (w (default-width canvas))

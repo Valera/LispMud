@@ -14,7 +14,7 @@
 
 (defun deposit (person sum)
   "Deposit given sum of money to person's accont."
-  (incf (gethash person *bank*) sum))
+  (setf (gethash person *bank*) (+ sum (gethash person *bank* 0))))
  
 (defun withdraw (person sum)
   "Withdraw given sum of money from person's accont."

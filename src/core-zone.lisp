@@ -22,28 +22,6 @@
   (incf *zone-id-source*)
   (setf (lock zone) (make-lock (concatenate 'string "Zone mutex: " (name zone)))))
 
-(defgeneric queue-mesg (zone mesg-type arguments &key timeout))
-(defmethod queue-mesg ((zone zone) mesg-type arguments &key timeout)
-  (if timeout
-      (schedule-timer (make-timer #'(lambda ()
-				      (queue-mesg zone mesg-type arguments)))
-		      2)
-      (sb-queue:enqueue (list mesg-type arguments) (message-queue zone))))
-
-(defgeneric get-mesg (zone))
-(defmethod get-mesg ((zone zone))
-  (dequeue (message-queue zone)))
-
-(defgeneric event-loop (zone))
-(defmethod event-loop ((zone zone))
-  (iter
-    (repeat 200)
-    (queue-mesg zone :mob-activity ()))
-  (iter
-    (for message = (get-mesg zone))
-    (case message
-      (:mob-activity ()))))
-
 (defun save-zone (zone filename)
   (with-open-file (stream filename :direction :output :if-exists :supersede)
     (let ((map-array (map-array zone)))
@@ -152,13 +130,19 @@
 	  (setf (aref (mobs-max-numbers zone) i) max-number))))
 
 ;; Временная функция для отладки. Добавляет в комнату с координатами (1, 1) собаку.
+;; TODO:typo
 (defmethod temp-start-work ((zone zone))
-#+nil
+  (push (list :bank-deposit-trigger nil
+	      #'(lambda (room player sum)
+		  (declare (ignore room))
+		  (format (output player) "~a вложил ~a монет в банк.~%" (name player) sum)))
+	(triggers (aref (map-array zone) 3 3)))
+  #+nil
   (setf (triggers (aref (map-array zone) 1 1))
 	(list
 	 (list :player-left-room nil
 	       #'(lambda (player room direction) (send-message-to-players (format nil "~A ушёл на ~A~%" (word-ip player) (direction-name direction))
-								(players room))))))
+									  (players room))))))
   (start-work zone))
 
 ;; Закончить работу зоны и все петли событий, чтобы освободить ресурсы.

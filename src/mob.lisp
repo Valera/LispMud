@@ -14,8 +14,7 @@
 
 (defmethod initialize-instance :after ((mob mob) &rest initargs)
   (declare (ignore initargs))
-  (setf (hp mob) (max-hp mob))
-#+nil  (queue-mesg (zone mob) :mob-activity (list 'activity) :timeout 20))
+  (setf (hp mob) (max-hp mob)))
 
 (defgeneric battle (mob mob2-or-player))
 
@@ -33,13 +32,13 @@
 (defmethod go-out ((mob mob) (room myroom))
   (removef mob (mobs room))
   ;(setf (room mob) nil)
-  (queue-mesg (room mob) :leave (format nil "~a вышел из комнаты" (name mob))))
+#+nil  (queue-mesg (room mob) :leave (format nil "~a вышел из комнаты" (name mob))))
 
 (defgeneric enter (mob room))
 (defmethod enter ((mob mob) (room myroom))
   (push mob (mobs room))
   ;(setf (room mob) room)
-  (queue-mesg (room mob) :enter (format nil "~a вышел из комнаты" (name mob))))
+#+nil  (queue-mesg (room mob) :enter (format nil "~a вышел из комнаты" (name mob))))
 
 ;; Сделать что-нибудь, чтобы казаться настоящим.
 (defgeneric idle-animation (mob))
@@ -54,7 +53,6 @@
   (add-event 3 #'(lambda () (idle-animation dog)) nil 30))
 
 (defmethod idle-animation ((mob dog))
-  #+nil (queue-mesg (zone mob) :mob-activity (list 'activity) :timeout 2)
   (iter (for p in (players (mob-room mob)))
 	(format (output p) "~&Собака почесала себя лапой за ухом и зевнула.~%")))
 
@@ -67,7 +65,6 @@
   (add-event 3 #'(lambda () (idle-animation gnome)) nil 40))
 
 (defmethod idle-animation ((mob bank-gnome))
-  #+nil (queue-mesg (zone mob) :mob-activity (list 'activity) :timeout 2)
   (iter (for p in (players (mob-room mob)))
 	(format (output p) "~&Седой гном перелистнул страницу в банковской книге и щёлкнул костяшками на счётах.~%")))
 

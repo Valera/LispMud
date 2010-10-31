@@ -126,7 +126,7 @@
   (labels ((call-if-matches (trigger)
 	     (destructuring-bind (type trigger-fun action) trigger
 	       (when (and (eql type action-type) (or (not trigger-fun) (apply trigger-fun parameters)))
-		 (apply action parameters))))
+		 (apply action room parameters))))
 	   (process-trigger-list (trigger-list)
 	     (dolist (trig trigger-list)
 	       (call-if-matches trig))))

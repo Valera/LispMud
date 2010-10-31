@@ -160,6 +160,29 @@
 	  (color *cc-reset*))
 	(write-line "У вас ничего нет. :("))))
 
+(defun command-deposit (sum-string)
+  "Комманда ВЛОЖИТЬ: вложить N монет в банк."
+  (let ((sum (parse-integer sum-string)))
+    (if (and (plusp sum) (< sum (money *player*)))
+	(progn
+	  (decf (money *player*) sum)
+	  (deposit (name *player*) sum)
+	  (process-room-triggers *player-room* :bank-deposit-trigger *player* sum))
+	(format t "Извините, вложить в банк \"~a\" нельзя.~%" sum-string))))
+
+(defun command-withdraw (sum-string)
+  "Комманда СНЯТЬ: снять N монет со счёта в банке."
+  (let ((sum (parse-integer sum-string)))
+    (if (and (plusp sum) (< sum (balance (name *player*))))
+	(if (withdraw (name *player*) sum)
+	    (incf (money *player*) sum)
+	    (format t "Извините. На вашем счёте слишком мало денег."))
+	(format t "Извините, вложить в банк \"~a\" нельзя.~%" sum-string))))
+
+(defun command-balance ()
+  "Комманда БАЛАНС: вывести баланс счёта в банке."
+  (format t "На вашем счёте в банке ~a монет.~%" (balance (name *player*))))
+
 (defun command-list-commands ()
   "Комманда для вывода списка других комманд"
   (format t
@@ -199,5 +222,8 @@
      ("склад" ,'command-store)
      ("говорить" ,'command-say)
      ("болтать" ,'command-chat)
+     ("вложить" command-deposit)
+     ("снять" command-withdraw)
+     ("баланс" command-balance)
      ("команды" ,'command-list-commands)
      ("конец"  ,'command-leave))))

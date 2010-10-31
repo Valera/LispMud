@@ -23,7 +23,8 @@
    (place-type :accessor place-type :initform nil :initarg :place-type)
    (mobs :accessor mobs :initform nil)
    (players :accessor players :initform nil)
-   (items-on-floor :accessor items-on-floor :initform (list (make-instance 'item :name "мочалка") (make-instance 'item :name "кусок мыла")))
+   (items-on-floor :accessor items-on-floor :initform
+		   (list (make-instance 'coin-heap :coins (random 10)) (make-instance 'item :name "мочалка") (make-instance 'item :name "кусок мыла")))
    (triggers :accessor triggers :initform nil)
    (west-exit :accessor west-exit :initform nil :initarg :west-exit)
    (east-exit :accessor east-exit :initform nil :initarg :east-exit)
@@ -90,8 +91,8 @@
 
 (defgeneric room-about (room))
 (defmethod room-about ((room myroom))
-  (write-string *cc-blue*)
-  (format t "В комнате ~a~%" (short-description *player-room*))
+  (write-string *cc-cyan*)
+  (format t "~a~%" (short-description *player-room*))
   (write-string *cc-reset*)
   (let ((items (items-on-floor room)))
     (if items
@@ -103,11 +104,12 @@
   (let ((other-players (remove *player* (players room))))
     (if other-players
 	(format t "Игроки:~%~{  ~a~%~}" (mapcar #'name other-players))))
-  (format t "~:[~;с~]~:[~;ю~]~:[~;з~]~:[~;в~]> "
+  (format t "~:[~;С~]~:[~;Ю~]~:[~;З~]~:[~;В~] ~a$ > "
 	  (north-exit *player-room*)
 	  (south-exit *player-room*)
 	  (west-exit *player-room*)
-	  (east-exit *player-room*))
+	  (east-exit *player-room*)
+	  (money *player*))
   (force-output))
 
 (defgeneric add-trigger (object trigger))

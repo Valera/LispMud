@@ -121,7 +121,7 @@
 			      direction x y)))))))))
 
 (defun unlink (room)
-  "Отключить выходы между этой комнатой и соседями и наоборот."
+  "Удалить все входы в комнату и выходы из неё"
   (iter (for i in *exits*)
 	(when (exit room i)
 	  (setf (exit (dest-room (exit room i)) (reverse-direction i)) nil)
@@ -156,7 +156,7 @@
   (setf (triggers (aref (map-array zone) 1 1))
 	(list
 	 (list :player-left-room nil
-	       #'(lambda (player room direction) (send-message-to-players (format nil "~A пошёл на ~A~%" (word-ip player) (direction-name direction))
+	       #'(lambda (player room direction) (send-message-to-players (format nil "~A ушёл на ~A~%" (word-ip player) (direction-name direction))
 								(players room))))))
   (start-work zone))
 

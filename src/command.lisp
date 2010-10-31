@@ -143,9 +143,7 @@
 	    (iter (for item-on-floor in (items-on-floor *player-room*))
 		  (when (mudname-equal item-name (name item-on-floor))
 		    (push item-on-floor taken-items)
-		    (push item-on-floor (inventory *player*))
-		    (player-took *player-room* *player* item-on-floor)
-		    (format t "Вы взяли с пола ~a.~%" (word-vp item-on-floor))))
+		    (take-item *player-room* *player* item-on-floor)))
 	    (finally ;; Удалить поднятые шмотки из списка лежащих в комнате.
 	     (setf (items-on-floor *player-room*) (nset-difference (items-on-floor *player-room*) taken-items))))
       (write-line "Что вы хотите взять-то?")))

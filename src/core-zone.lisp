@@ -144,7 +144,6 @@
   (let ((mobs-type-count (length (mobs-spec zone))))
     (setf (mobs-counters zone) (make-array mobs-type-count :initial-element 0))
     (setf (mobs-max-numbers zone) (make-array mobs-type-count))
-    (print mobs-type-count mudsketcher::*myout*)
     (iter (for (mob-class x y respawn-rate max-number) in (mobs-spec zone))
 	  (for i upfrom 0)
 	  (push (make-instance mob-class :zone zone :mob-room (aref (map-array zone) x y))

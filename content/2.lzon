@@ -1,6 +1,6 @@
 
-(:ZONE-NAME "Фетандил" :MOBS-SPEC NIL :ZONE-SIZE (5 5) :ZONE-ROOMS
- ((:ROOM-SHORT-DESCRIPTION "Сосновый бор." :ROOM-LONG-DESCRIPTION
+(:ZONE-NAME "Фетандил" :MOBS-SPEC ((BANK-GNOME 3 3 90 1)) :ZONE-SIZE (5 5) :ZONE-ROOMS
+ ((:ROOM-SHORT-DESCRIPTION "Сосновый бор" :ROOM-LONG-DESCRIPTION
    "Вы видите множество сосен, залитых солнечным светом. Здесь свежо и приятно, как и во всяком бору."
    :ROOM-FLAGS NIL :ROOM-TYPE :FOREST :COORD (3 0) :WEST-EXIT NIL :EAST-EXIT
    NIL :NORTH-EXIT NIL :SOUTH-EXIT
@@ -15,7 +15,7 @@
    (:EXIT-DESCRIPTION "Сосновый бор." :DOOR NIL) :SOUTH-EXIT
    (:EXIT-DESCRIPTION "Городская площадь" :DOOR NIL))
   (:ROOM-SHORT-DESCRIPTION "Гостинница \"Белый бык\"" :ROOM-LONG-DESCRIPTION
-   "Вы в гостиннице. На стенах висят головы разных убитых животных, а на самом видном месте красуется чучуло огромного белого быка. Очевидно, хозяин гостинницы убил его на охоте."
+   "Вы в гостиннице. На стенах висят головы разных убитых животных, а на самом видном месте красуется чучело огромного белого быка. Очевидно, хозяин гостинницы убил его на охоте."
    :ROOM-FLAGS NIL :ROOM-TYPE :INDOORS :COORD (0 2) :WEST-EXIT NIL :EAST-EXIT
    (:EXIT-DESCRIPTION "Главная улица" :DOOR NIL) :NORTH-EXIT NIL :SOUTH-EXIT
    NIL)

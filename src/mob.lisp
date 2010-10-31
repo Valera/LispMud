@@ -15,7 +15,7 @@
 (defmethod initialize-instance :after ((mob mob) &rest initargs)
   (declare (ignore initargs))
   (setf (hp mob) (max-hp mob))
-  (queue-mesg (zone mob) :mob-activity (list 'activity) :timeout 20))
+#+nil  (queue-mesg (zone mob) :mob-activity (list 'activity) :timeout 20))
 
 (defgeneric battle (mob mob2-or-player))
 
@@ -42,15 +42,32 @@
   (queue-mesg (room mob) :enter (format nil "~a вышел из комнаты" (name mob))))
 
 ;; Сделать что-нибудь, чтобы казаться настоящим.
-(defgeneric activity (mob))
-(defmethod activity ((mob mob))
+(defgeneric idle-animation (mob))
+
+
+;; Собака
+(defclass dog (mob) ()
+  (:default-initargs :name "собака"))
+
+(defmethod initialize-instance :after ((dog dog) &rest initargs)
+  (declare (ignore initargs))
+  (add-event 3 #'(lambda () (idle-animation dog)) nil 30))
+
+(defmethod idle-animation ((mob dog))
   #+nil (queue-mesg (zone mob) :mob-activity (list 'activity) :timeout 2)
   (iter (for p in (players (mob-room mob)))
 	(format (output p) "~&Собака почесала себя лапой за ухом и зевнула.~%")))
 
-(defclass dog (mob) ())
+;; Гном из банка.
+(defclass bank-gnome (mob) ()
+  (:default-initargs :name "седой гном"))
 
-(defmethod initialize-instance :after ((dog dog) &rest initargs)
+(defmethod initialize-instance :after ((gnome bank-gnome) &rest initargs)
   (declare (ignore initargs))
-  (add-event 3 #'(lambda () (activity dog)) nil 3)
-  (setf (name dog) "Cобака"))
+  (add-event 3 #'(lambda () (idle-animation gnome)) nil 40))
+
+(defmethod idle-animation ((mob bank-gnome))
+  #+nil (queue-mesg (zone mob) :mob-activity (list 'activity) :timeout 2)
+  (iter (for p in (players (mob-room mob)))
+	(format (output p) "~&Седой гном перелистнул страницу в банковской книге и щёлкнул костяшками на счётах.~%")))
+

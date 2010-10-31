@@ -94,13 +94,19 @@
   (write-string *cc-cyan*)
   (format t "~a~%" (short-description *player-room*))
   (write-string *cc-reset*)
+  (write-string (description *player-room*))
+  (write-char #\Newline)
+  (when (mobs room)
+    (format t "Мобы:~%")
+    (write-string *cc-red*)
+    (format t "~{  ~a~%~}"
+	    (mapcar #'(lambda (mob) (string-capitalize (name mob) :end 1)) (mobs room)))
+    (write-string *cc-reset*))
   (let ((items (items-on-floor room)))
     (if items
 	(if (= (length items) 1)
 	    (format t "На полу лежит ~a.~%" (name (first items)))
 	    (format t "На полу лежат:~%~{  ~a~%~}" (mapcar #'name items)))))
-  (when (mobs room)
-      (format t "Мобы:~%~{  ~a~%~}" (mobs room)))
   (let ((other-players (remove *player* (players room))))
     (if other-players
 	(format t "Игроки:~%~{  ~a~%~}" (mapcar #'name other-players))))

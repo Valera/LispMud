@@ -78,7 +78,7 @@
     (destructuring-bind (&key zone-name zone-rooms mobs-spec
 			      ((:zone-size (size-x size-y))))
 	(read stream)
-      (pvalue zone-name zone-rooms (list size-x size-y))
+      (pvalue zone-name zone-rooms (list size-x size-y) mobs-spec)
       (let ((map (make-array (list size-x size-y) :initial-element nil))
 	    (entry-rooms nil))
 	(dolist (room zone-rooms)
@@ -144,6 +144,7 @@
   (let ((mobs-type-count (length (mobs-spec zone))))
     (setf (mobs-counters zone) (make-array mobs-type-count :initial-element 0))
     (setf (mobs-max-numbers zone) (make-array mobs-type-count))
+    (print mobs-type-count mudsketcher::*myout*)
     (iter (for (mob-class x y respawn-rate max-number) in (mobs-spec zone))
 	  (for i upfrom 0)
 	  (push (make-instance mob-class :zone zone :mob-room (aref (map-array zone) x y))
@@ -153,6 +154,7 @@
 
 ;; Временная функция для отладки. Добавляет в комнату с координатами (1, 1) собаку.
 (defmethod temp-start-work ((zone zone))
+#+nil
   (setf (triggers (aref (map-array zone) 1 1))
 	(list
 	 (list :player-left-room nil

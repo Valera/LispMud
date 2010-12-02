@@ -22,7 +22,10 @@
 
 (defun load-store (file-name)
   (bt:with-recursive-lock-held (*store-lock*)
-    (setf *store* (cl-store:restore file-name))))
+    (handler-case
+	(setf *store* (cl-store:restore file-name))
+      (sb-int:simple-file-error ()
+	(setf *store* (make-hash-table :test 'equal))))))
 
 (defun dump-store (file-name)
   (bt:with-recursive-lock-held (*store-lock*)

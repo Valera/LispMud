@@ -65,35 +65,23 @@
 		  byte-stream)
   (force-output byte-stream))
 
-(defvar *ya-bytes* (string-to-octets "яя" :external-format :cp1251))
-
 (defmethod stream-write-string ((stream telnet-byte-output-stream) string &optional (start 0) end)
-  (flet ((substring-length (string start end)
-	   "Return lenght of sting from start to end. End can be nil."
-	   (- (or end (length string))
-	      start)))
-    (with-slots (buffer columns inner-stream start-line-p) stream
-      (let ((positions (all-positions #\я string :start start :end end)))
-	(if positions
-	    ;; then: печать кусочков строки, печатая вместо буквы "я" "яя".
-	    ;; Хак для правильной обработки телнетом этой буквы.
-	    (let ((otrezki  (neigbours-list (append `(,start) positions `(,end)))))
-	      (iter (for (start . end) in otrezki)
-		    (unless (first-time-p)
-		      (vector-push-extend #\я buffer)
-		      (vector-push-extend #\я buffer)
-		      (incf start))
-		    (for len = (substring-length string start end))
-		    (incf (fill-pointer buffer) len)
-		    (replace buffer string :start1 (- (fill-pointer buffer) len)
-			     :start2 start :end2 end))
-	      (send-string buffer inner-stream))
-	    ;; else: букв я в строке нет, посылаем её целиком.
-	    (if (= 0 (fill-pointer buffer))
-		(send-string string inner-stream :start start :end end)
-		(let ((len (substring-length string start end)))
-		  (incf (fill-pointer buffer) len)
-		  (replace buffer string :start1 (- (fill-pointer buffer) len))
-		  (send-string buffer inner-stream)))))
-      (setf (fill-pointer buffer) 0)
-      (setf start-line-p (char= (last-elt string) #\Newline)))))
+  (with-slots (buffer columns inner-stream start-line-p) stream
+    (iter (for i from start below (or end (length string)))
+	  (for char = (aref string i))
+	  (when (>= (1+ (fill-pointer buffer)) (array-dimension string 0))
+	    (send-string buffer inner-stream)
+	    (setf (fill-pointer buffer) 0))
+	  (case char
+	    (#\я
+	     (vector-push-extend #\я buffer)
+	     (vector-push-extend #\я buffer))
+	    (#\Newline
+	     (vector-push-extend #\Return buffer)
+	     (vector-push-extend #\Newline buffer))
+	    (otherwise
+	     (vector-push-extend char buffer))))
+    (when (plusp (fill-pointer buffer))
+      (send-string buffer inner-stream)
+      (setf (fill-pointer buffer) 0
+	    start-line-p (char= #\Newline (last-elt string))))))

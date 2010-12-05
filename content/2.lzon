@@ -1,5 +1,5 @@
 
-(:ZONE-NAME "Фетандил" :MOBS-SPEC ((BANK-GNOME 3 3 90 1)) :ZONE-SIZE (5 5) :ZONE-ROOMS
+(:ZONE-NAME "Фетандил" :MOBS-SPEC ((BANK-GNOME 3 3 90 1) (DOG 1 1 90 1)) :ZONE-SIZE (5 5) :ZONE-ROOMS
  ((:ROOM-SHORT-DESCRIPTION "Сосновый бор" :ROOM-LONG-DESCRIPTION
    "Вы видите множество сосен, залитых солнечным светом. Здесь свежо и приятно, как и во всяком бору."
    :ROOM-FLAGS NIL :ROOM-TYPE :FOREST :COORD (3 0) :WEST-EXIT NIL :EAST-EXIT

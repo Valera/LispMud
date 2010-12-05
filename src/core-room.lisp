@@ -21,6 +21,7 @@
   ((short-description :accessor short-description :initform "" :initarg :short-description)
    (description :accessor description :initform "" :initarg :description)
    (place-type :accessor place-type :initform nil :initarg :place-type)
+   (mobless-p :accessor mobless-p :initform nil :initarg :mobless-p)
    (mobs :accessor mobs :initform nil)
    (players :accessor players :initform nil)
    (items-on-floor :accessor items-on-floor :initform
@@ -84,10 +85,20 @@
   (ecase direction
     (:north -1) (:east  0) (:south 1) (:west  0)))
 
+(defun free-exits (room)
+  (iter (for e in *exits*)
+	(for exit = (exit room e))
+	(when (and exit (can-pass exit))
+	  (collect exit))))
+
 (defgeneric message-to-visitors (room message))
 (defmethod message-to-visitors ((room myroom) message)
-  (iter (for player in (players room))
-	(message player message)))
+  (iter (for p in (players room))
+	(write-string message (output p))))
+
+(defun message-to-visitors-except (player room message)
+  (iter (for p in (remove player (players room)))
+	(write-string message (output p))))
 
 (defgeneric room-about (room))
 (defmethod room-about ((room myroom))

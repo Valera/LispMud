@@ -205,7 +205,8 @@
 		   (progn
 		     (push *player* (players *player-room*))
 		     (setf (player-state client) 'game)
-		     (room-about *player-room*))
+		     (room-about *player-room*)
+		     (deliver-mail-for *player* *player-room*))
 		   (progn
 		     (process-input1 fsm "облом")
 		     (setf *player* nil)))))

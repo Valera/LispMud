@@ -7,13 +7,14 @@
  
 (defsystem :lispmud
   :serial t
-  :depends-on (:split-sequence :alexandria :iterate :sb-queue 
+  :depends-on (:split-sequence :alexandria :iterate :sb-queue :postmodern
 			       :bordeaux-threads :usocket :cl-store)
   :components ((:module "src"
 			:serial t
 			:components ((:file "packages" )
 				     ;; core
 				     (:file "core-utils")
+				     (:file "core-mail")
 				     (:file "rucase")
 				     (:file "color-codes")
 				     (:file "event-timer")

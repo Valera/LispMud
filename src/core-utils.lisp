@@ -94,3 +94,7 @@ forms to the hash-table."
        for value = (read-line) then (read-line)
        when (or (not satisfy-p) (funcall satisfy-p value))
        do (return value)))
+
+(defgeneric name (object)) ;; accessor for 'name slot.
+(defmethod name ((name string))
+  name)

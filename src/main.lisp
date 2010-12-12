@@ -28,15 +28,9 @@
   (pvalue *zone-list*))
 
 (defun load-game-data ()
-  (load "src/cases.lisp")
-  (flet ((full-path (fname) (concatenate 'string *savedir* fname)))
-    (load-user-db (full-path "users.db"))
-    (load-store   (full-path "store.db"))))
+  (load "src/cases.lisp"))
 
-(defun save-game-data ()
-  (flet ((full-path (fname) (concatenate 'string *savedir* fname)))
-    (dump-user-db (full-path "users.db"))
-    (dump-store   (full-path "store.db"))))
+(defun save-game-data ())
 
 (defun main (&key (config-file "sample-config.lisp") port)
   (load-config config-file :port-arg port)

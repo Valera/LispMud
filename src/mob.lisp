@@ -92,7 +92,7 @@
     (message-to-visitors room (format nil "~&Внезапно, как из ниоткуда, в воздухе появляется синий дракончик.~%"))
     (message-to-visitors-except player room (format nil "~&Дракончик с интересом огладывается по сторонами и подлетает к ~a~%" (word-dp player)))
     (format (output player) "~&Дракончик с интересом огладывается по сторонами и подлетает к вам.~%")
-    (let ((messages (recv-mail (name *player*))))
+    (let ((messages (recv-mail *player*)))
       (apply 'format (output player) "~&Синий дракончик вытаскивает из сумки на шее ~A и отдаёт ~A вам.~%"
 	     (if (> (length messages) 1)
 		 (list (format nil "~a письма" (length messages)) "их")

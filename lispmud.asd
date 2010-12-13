@@ -28,6 +28,7 @@
 ;				     (:file "core-telnet")
 				     (:file "core-streams")
 				     (:file "core-server")
+				     (:file "input-handlers")
 				     ;; content
 				     (:file "mob")
 				     (:file "main")

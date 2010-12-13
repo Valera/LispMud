@@ -6,11 +6,11 @@
 (defvar *port*)
 (defvar *world-filename*)
 (defvar *savedir*)
-(defvar *enter-password*)
+(defvar *alpha-version-password*)
 
 (defun load-config (file-name &key port-arg)
   (with-input-from-file (stream file-name)
-    (destructuring-bind (&key host port world-file save-directory enter-password)
+    (destructuring-bind (&key host port world-file save-directory alpha-version-password)
 	(read stream)
 ;      (break "~a ~a ~a ~a ~a" host port world-file save-directory)
       (unless (and host port world-file save-directory)
@@ -19,7 +19,7 @@
 	    *port* (or port-arg port)
 	    *world-filename* world-file
 	    *savedir* save-directory
-	    *enter-password* enter-password))))
+	    *alpha-version-password* alpha-version-password))))
 
 (defun initialize-game ()
   (reset-online-users)

@@ -183,6 +183,15 @@
   "Комманда БАЛАНС: вывести баланс счёта в банке."
   (format t "На вашем счёте в банке ~a монет.~%" (balance (name *player*))))
 
+(defun command-mail (subcommand &optional receiver-name)
+  (word-dispatch subcommand
+    ("писать" (if receiver-name
+		  (if (user-exists-p receiver-name)
+		      (send-mail *player* receiver-name (text-editor-fsm))
+		      (format t "Игрока с именем \"~a\" не существует.?~%" receiver-name))
+		  (format t "Укажите адресата.~%")))
+    (t (format t "ПОЧТА ПИСАТЬ <ИМЯ> -- написать письмо~%"))))
+
 (defun command-list-commands ()
   "Комманда для вывода списка других комманд"
   (format t

@@ -15,6 +15,7 @@
 (defgeneric process-data (fsm input))
 
 ;; Как быть с протечками аргументов fsm и fsm, input?
+;; FIXME: проверить, существуют ли initial-state-name final-state-name
 (defmacro generate-fsm (name initial-state-name final-state-name slots &body state-forms)
   (declare (ignore final-state-name))
   (let ((enter-functions (make-hash-table))

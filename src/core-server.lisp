@@ -160,6 +160,7 @@
    (buffer :accessor client-buffer :initform (make-array 200 :fill-pointer 0 :element-type '(unsigned-byte 8)))
    (globvars :accessor globvars)
    (player-state :accessor player-state :initform 'login)
+   (input-handlers :accessor input-handlers :initform nil)
    (register-and-login-fsm :accessor register-and-login-fsm)))
 
 (defmethod initialize-instance :after ((client client) &key &allow-other-keys)
@@ -168,54 +169,41 @@
   (setf (globvars client) (list '*standard-output* (out-stream client)
 				'*player-zone* (first *zone-list*)
 				'*player-room* (first (entry-rooms (first *zone-list*)))
-				'*player* nil))
+				'*player* nil
+				'*client* client))
   (write-line "Добро пожаловать." (out-stream client))
   (with-variables-from (globvars client)
-      (*standard-output*)
-    (if *enter-password*
+      (*standard-output* *client*)
+    (if *alpha-version-password*
 	(progn
 	  (format t "Введите пароль альфа-версии: ")
-	  (setf (player-state client) 'enter-password))
-	(setf (player-state client) 'login
-	      (register-and-login-fsm client) (make-instance 'register-and-login-fsm)))))
+	  (push-input-handler 'enter-alpha-password))
+	(progn
+	  (setf (register-and-login-fsm client)
+		(make-instance 'register-and-login-fsm))
+	  (push-input-handler 'registration-and-login-handler)))))
 
 ;; Temporary *out* string for setting it as *standard-output*
 ;(defparameter *out* (make-array 1000 :fill-pointer 0 :element-type 'character))
+
+(defvar *client*)
+
+(defun push-input-handler (handler)
+  (push handler (input-handlers *client*)))
+
+(defun pop-input-handler ()
+  (pop (input-handlers *client*)))
+
+(defun change-top-handler (new-handler)
+  (pop-input-handler)
+  (push-input-handler new-handler))
 
 (defmethod client-on-command ((client client) socket input)
 ;  (with-output-to-string (stream *out*)
 ;    (format stream "client-on-command: ~a ~a ~s~%" client socket input))
   (with-variables-from (globvars client)
-      (*standard-output* *player-zone* *player-room* *player*)
-    (ecase (player-state client)
-      (enter-password
-       (if (string= *enter-password* (string-trim '(#\Space #\Newline #\Return) input))
-	   (progn
-	     (setf (player-state client) 'login)
-	     (format t "Пароль принят.~%")
-	     (setf  (register-and-login-fsm client) (make-instance 'register-and-login-fsm)))
-	   (format t "Неверный пароль. Повторите ввод: ")))
-      (login
-       (handler-case
-	   (with-slots ((fsm register-and-login-fsm)) client
-	     (process-input1 fsm (string-trim '(#\Space #\Newline #\Return) input))
-	     (when (eql (current-state fsm) 'finish-login)
-	       (setf *player* (make-instance 'player :name (name fsm) :output   *standard-output*))
-	       (if (set-user-online *player*)
-		   (progn
-		     (push *player* (players *player-room*))
-		     (setf (player-state client) 'game)
-		     (room-about *player-room*)
-		     (deliver-mail-for *player* *player-room*))
-		   (progn
-		     (process-input1 fsm "облом")
-		     (setf *player* nil)))))
-       ;; FIXME: Выход без регистрации.
-#+nil	 (error (condition) (format t "Command erred with condition ~a~%" condition))))
-      (game
-       (handler-case
-	   (progn (exec-command (string-trim '(#\Space #\Newline #\Return) input))
-		  (room-about *player-room*)))))))
+      (*standard-output* *player-zone* *player-room* *player* *client*)
+    (funcall (first (input-handlers client)) client input)))
 
 (defmethod client-disconnect ((client client))
   (with-variables-from (globvars client)

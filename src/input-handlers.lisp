@@ -17,8 +17,9 @@
       (if (set-user-online *player*)
 	  (progn
 	    (push *player* (players *player-room*))
+	    (if (have-mail-for *player*)
+		(format t "У вас есть ~a непрочитанных письма." (length (have-mail-for *player*))))
 	    (room-about *player-room*)
-	    (deliver-mail-for *player* *player-room*)
 	    (pop-input-handler)
 	    (push-input-handler 'terminal-input-handler))
 	  (progn

@@ -30,7 +30,7 @@
   t)
 
 (defun find-in-inventory (item-name &optional (player *player*))
-  (find item-name (inventory player) :key #'name :test #'string-equal))
+  (find item-name (inventory player) :key #'name :test #'mudname-equal))
 
 (defun command-store (&rest subcommand-and-names)
   (if subcommand-and-names
@@ -226,6 +226,16 @@
 		 (deliver-mail-for *player* *player-room*)))
 	    (t (mail-usage)))))))
 
+(defun command-read (&rest items)
+  (pvalue items)
+  (if (/= (length items) 1)
+      (format t "Вы можете за раз прочесть один текст или сообщение.~%")
+      (let ((item (find-in-inventory (first items))))
+	(pvalue item (class-of item))
+	(if (and item (eql (class-of item) (find-class 'letter)))
+	    (format t "Содержание:~%~A~%" (text item))
+	    (format t "Вы порылись в инвентаре, но не смогли прочитать ничего, похожего на ~A.~%" (first items))))))
+
 (defun command-list-commands ()
   "Комманда для вывода списка других комманд"
   (format t
@@ -275,5 +285,6 @@
      ("баланс" command-balance)
      ("перевести" command-transfer)
      ("почта" command-mail)
+     ("читать" command-read)
      ("команды" ,'command-list-commands)
      ("конец"  ,'command-leave))))

@@ -203,7 +203,8 @@
 ;    (format stream "client-on-command: ~a ~a ~s~%" client socket input))
   (with-variables-from (globvars client)
       (*standard-output* *player-zone* *player-room* *player* *client*)
-    (funcall (first (input-handlers client)) client input)))
+    (pomo:with-connection (append *db-connection-spec* '(:pooled-p t))
+      (funcall (first (input-handlers client)) client input))))
 
 (defmethod client-disconnect ((client client))
   (with-variables-from (globvars client)

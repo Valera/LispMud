@@ -8,12 +8,13 @@
   (pomo:execute (:update 'players
 			 :set 'money-in-bank (:+ sum 'money-in-bank)
 			 :where (:= 'name person))))
+
 (defun balance (person)
   (pomo:query (:select
 	       'money-in-bank
 	       :from 'players
-	       :where (:= 'name person))
-	      :single! t))
+	       :where (:= 'name (name person)))
+	      :single!))
 
 (defun withdraw (person sum)
   "Withdraw given sum of money from person's accont."

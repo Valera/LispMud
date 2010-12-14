@@ -31,3 +31,5 @@
   (declare (ignore client))
   (progn (exec-command (string-trim '(#\Space #\Newline #\Return) input))
 	 (room-about *player-room*)))
+
+

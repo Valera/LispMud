@@ -183,6 +183,9 @@
   "Комманда БАЛАНС: вывести баланс счёта в банке."
   (format t "На вашем счёте в банке ~a монет.~%" (balance (name *player*))))
 
+(defun command-transfer ()
+  "Комманда ПЕРЕВЕСТИ: перевести деньги на счёт другого игрока")
+
 (defun command-mail (subcommand &optional receiver-name)
   (word-dispatch subcommand
     ("писать" (if receiver-name

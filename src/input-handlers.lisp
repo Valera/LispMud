@@ -27,9 +27,11 @@
        ;; FIXME: Выход без регистрации.
 #+nil	 (error (condition) (format t "Command erred with condition ~a~%" condition)))
 
+(defvar *room-changed*)
 (defun terminal-input-handler (client input)
   (declare (ignore client))
-  (progn (exec-command (string-trim '(#\Space #\Newline #\Return) input))
-	 (room-about *player-room*)))
-
+  (let ((*room-changed* nil))
+    (exec-command (string-trim '(#\Space #\Newline #\Return) input))
+    (if *room-changed*
+	(room-about *player-room*))))
 

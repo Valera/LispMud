@@ -7,7 +7,7 @@
   (assert (plusp sum))
   (pomo:execute (:update 'players
 			 :set 'money-in-bank (:+ sum 'money-in-bank)
-			 :where (:= 'name person))))
+			 :where (:= 'name (name person)))))
 
 (defun balance (person)
   (pomo:query (:select
@@ -18,18 +18,18 @@
 
 (defun withdraw (person sum)
   "Withdraw given sum of money from person's accont."
-  (assert (plusp sum))
+  (assert (>= sum 0))
   (pomo:with-transaction ()
     (let ((balance (balance person)))
       (if (> sum balance)
 	  nil
 	  (pomo:execute (:update
 			 'players
-			 :set
-			 'money-in-bank (:- 'money-in-bank sum)))))))
+			 :set 'money-in-bank (:- 'money-in-bank sum)
+			 :where (:= 'name (name person))))))))
 
 (defun transfer (person1 person2 sum)
   (pomo:with-transaction ()
-    (when (< sum (balance person1))
+    (when (<= sum (balance person1))
       (withdraw person1 sum)
       (deposit person2 sum))))

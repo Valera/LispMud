@@ -29,6 +29,9 @@
 	(while (< end1 short-name-length)))
   t)
 
+(defun find-in-inventory (item-name &optional (player *player*))
+  (find item-name (inventory player) :key #'name :test #'string-equal))
+
 (defun command-store (&rest subcommand-and-names)
   (if subcommand-and-names
       (let ((subcomm (first subcommand-and-names))
@@ -66,7 +69,8 @@
 	      (process-room-triggers *player-room* :player-left-room *player* *player-room* direction)
 	      (player-exited *player-room* *player*)
 	      (setf *player-room* (dest-room exit))
-	      (push *player* (players *player-room*)))
+	      (push *player* (players *player-room*))
+	      (setf *room-changed* t))
 	    (format t "К сожалению, проход в эту сторону для тебя закрыт.~%"))
 	(format t "Вы не видите никакого прохода в этом направилении~%"))))
 
@@ -149,7 +153,7 @@
       (write-line "Что вы хотите взять-то?")))
 
 (defun command-inventory ()
-  "Комманда для просмотра вещей в инвентаре."
+  "Команда для просмотра вещей в инвентаре."
   (let ((inventory (inventory *player*)))
     (if inventory
 	(progn
@@ -161,9 +165,9 @@
 	(write-line "У вас ничего нет. :("))))
 
 (defun command-deposit (sum-string)
-  "Комманда ВЛОЖИТЬ: вложить N монет в банк."
+  "Команда ВЛОЖИТЬ: вложить N монет в банк."
   (let ((sum (parse-integer sum-string)))
-    (if (and (plusp sum) (< sum (money *player*)))
+    (if (and (plusp sum) (<= sum (money *player*)))
 	(progn
 	  (decf (money *player*) sum)
 	  (deposit (name *player*) sum)
@@ -173,27 +177,54 @@
 (defun command-withdraw (sum-string)
   "Комманда СНЯТЬ: снять N монет со счёта в банке."
   (let ((sum (parse-integer sum-string)))
-    (if (and (plusp sum) (< sum (balance (name *player*))))
+    (if (and (plusp sum) (<= sum (balance (name *player*))))
 	(if (withdraw (name *player*) sum)
 	    (incf (money *player*) sum)
 	    (format t "Извините. На вашем счёте слишком мало денег."))
-	(format t "Извините, вложить в банк \"~a\" нельзя.~%" sum-string))))
+	(format t "Извините, но вы не можете снять со счёта \"~a\" монет.~%" sum-string))))
 
 (defun command-balance ()
-  "Комманда БАЛАНС: вывести баланс счёта в банке."
+  "Команда БАЛАНС: вывести баланс счёта в банке."
   (format t "На вашем счёте в банке ~a монет.~%" (balance (name *player*))))
 
-(defun command-transfer ()
-  "Комманда ПЕРЕВЕСТИ: перевести деньги на счёт другого игрока")
+(defun command-transfer (person sum)
+  "Команда ПЕРЕВЕСТИ: перевести деньги на счёт другого игрока"
+  (let ((person (string-capitalize person))
+	(sum (handler-case (parse-integer sum)
+	       (parse-error () -1))))
+    (if (plusp sum)
+	(if (<= sum (balance *player*))
+	    (if (user-exists-p person)
+		(transfer *player* person sum)
+		(format t "Нет игрока с именем ~a.~%Укажите имя получателя полностью.~%" person))
+	    (format t "У вас нет таких денег. Надо быть эконемнее"))
+	(format t "Да введите же число по-человечески. Число болше нуля, что непонятного?~%"))))
 
-(defun command-mail (subcommand &optional receiver-name)
-  (word-dispatch subcommand
-    ("писать" (if receiver-name
-		  (if (user-exists-p receiver-name)
-		      (send-mail *player* receiver-name (text-editor-fsm))
-		      (format t "Игрока с именем \"~a\" не существует.?~%" receiver-name))
-		  (format t "Укажите адресата.~%")))
-    (t (format t "ПОЧТА ПИСАТЬ <ИМЯ> -- написать письмо~%"))))
+(defun command-mail (&rest subcommand-and-options)
+  "Команда ПОЧТА: получить или написать письмо"
+  (flet ((mail-usage () 
+	   (format t "И что делать? Используйте команду ПОЧТА так:~%почта получить~%почта писать <имя>~%~%")))
+    (if (zerop (length subcommand-and-options))
+	(mail-usage)
+	(destructuring-bind (subcommand &rest options) subcommand-and-options
+	  (word-dispatch subcommand
+	    ("писать"
+	     (if (/= 1 (length options))
+		 (format t "Укажите имя получателя.~%")
+		 (let ((receiver-name (first options)))
+		   (if (user-exists-p receiver-name)
+		       (let ((mail-editor
+			      (make-instance 'text-editor-fsm
+					     :after-editing-cb
+					     (lambda (text) (send-mail (name *player*) receiver-name text)))))
+			 (push-input-handler
+			  (lambda (client input) (declare (ignore client)) (process-input1 mail-editor input))))
+		       (format t "Игрока с именем \"~a\" не существует.~%" receiver-name)))))
+	    ("получить"
+	     (if (plusp (length options))
+		 (format t "подкоманда получить не имеет аргументов.~%")
+		 (deliver-mail-for *player* *player-room*)))
+	    (t (mail-usage)))))))
 
 (defun command-list-commands ()
   "Комманда для вывода списка других комманд"
@@ -217,6 +248,7 @@
 Общение
   ГОВОРИТЬ: ваши слова услышат все в комнате
   БОЛТАТЬ: ваши слова услышат все игроки в игре
+  ПОЧТА: писать и получать письма
 
   КОНЕЦ -- выйти из игры~%~%"))
 
@@ -241,5 +273,7 @@
      ("вложить" command-deposit)
      ("снять" command-withdraw)
      ("баланс" command-balance)
+     ("перевести" command-transfer)
+     ("почта" command-mail)
      ("команды" ,'command-list-commands)
      ("конец"  ,'command-leave))))

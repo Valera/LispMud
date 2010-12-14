@@ -174,6 +174,8 @@
   (write-line "Добро пожаловать." (out-stream client))
   (with-variables-from (globvars client)
       (*standard-output* *client*)
+;    (pvalue (globvars client))
+;    (pvalue *standard-output* *client*)
     (if *alpha-version-password*
 	(progn
 	  (format t "Введите пароль альфа-версии: ")

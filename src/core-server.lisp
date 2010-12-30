@@ -163,6 +163,8 @@
    (input-handlers :accessor input-handlers :initform nil)
    (register-and-login-fsm :accessor register-and-login-fsm)))
 
+(defvar *client*)
+
 (defmethod initialize-instance :after ((client client) &key &allow-other-keys)
   (setf (out-stream client)
 	(make-instance 'telnet-byte-output-stream :stream (socket-stream (socket client))))
@@ -187,8 +189,6 @@
 
 ;; Temporary *out* string for setting it as *standard-output*
 ;(defparameter *out* (make-array 1000 :fill-pointer 0 :element-type 'character))
-
-(defvar *client*)
 
 (defun push-input-handler (handler)
   (push handler (input-handlers *client*)))

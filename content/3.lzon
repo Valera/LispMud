@@ -1,0 +1,61 @@
+
+(:ZONE-NAME "Фетандил" :MOBS-SPEC
+ ((MUDSKETCHER::BANK-GNOME 3 3 90 1) (MUDSKETCHER::DOG 1 1 90 1)) :ZONE-SIZE
+ (5 5) :ZONE-ROOMS
+ ((:ROOM-SHORT-DESCRIPTION "Сосновый бор" :ROOM-LONG-DESCRIPTION
+   "Вы видите множество сосен, залитых солнечным светом. Здесь свежо и приятно, как и во всяком бору."
+   :ROOM-FLAGS NIL :ROOM-TYPE :FOREST :COORD (3 0) :WEST-EXIT NIL :EAST-EXIT
+   NIL :NORTH-EXIT NIL :SOUTH-EXIT
+   (:EXIT-DESCRIPTION "Старая улочка" :DOOR NIL))
+  (:ROOM-SHORT-DESCRIPTION "Харчевня \"Три корочки\"" :ROOM-LONG-DESCRIPTION
+   "Обычная рыгаловка." :ROOM-FLAGS NIL :ROOM-TYPE :INDOORS :COORD (1 1)
+   :WEST-EXIT NIL :EAST-EXIT NIL :NORTH-EXIT NIL :SOUTH-EXIT
+   (:EXIT-DESCRIPTION "Главная улица" :DOOR NIL))
+  (:ROOM-SHORT-DESCRIPTION "Старая улочка" :ROOM-LONG-DESCRIPTION
+   "Неболшая старая улочка, ведущая в лес." :ROOM-FLAGS NIL :ROOM-TYPE :CITY
+   :COORD (3 1) :WEST-EXIT NIL :EAST-EXIT NIL :NORTH-EXIT
+   (:EXIT-DESCRIPTION "Сосновый бор" :DOOR NIL) :SOUTH-EXIT
+   (:EXIT-DESCRIPTION "Городская площадь" :DOOR NIL))
+  (:ROOM-SHORT-DESCRIPTION "Гостинница \"Белый бык\"" :ROOM-LONG-DESCRIPTION
+   "Вы в гостиннице. На стенах висят головы разных убитых животных, а на самом видном месте красуется чучело огромного белого быка. Очевидно, хозяин гостинницы убил его на охоте."
+   :ROOM-FLAGS NIL :ROOM-TYPE :INDOORS :COORD (0 2) :WEST-EXIT NIL :EAST-EXIT
+   (:EXIT-DESCRIPTION "Главная улица" :DOOR NIL) :NORTH-EXIT NIL :SOUTH-EXIT
+   NIL)
+  (:ROOM-SHORT-DESCRIPTION "Главная улица" :ROOM-LONG-DESCRIPTION
+   "Вы стоите на главной улице города. Сразу видно, что за ней хорошо следят. Кругом чисто, на подоконниках окон стоят цветы в горшках."
+   :ROOM-FLAGS NIL :ROOM-TYPE :CITY :COORD (1 2) :WEST-EXIT
+   (:EXIT-DESCRIPTION "Гостинница \"Белый бык\"" :DOOR NIL) :EAST-EXIT
+   (:EXIT-DESCRIPTION "Главная улица" :DOOR NIL) :NORTH-EXIT
+   (:EXIT-DESCRIPTION "Харчевня \"Три корочки\"" :DOOR NIL) :SOUTH-EXIT
+   (:EXIT-DESCRIPTION "Жилые дома" :DOOR NIL))
+  (:ROOM-SHORT-DESCRIPTION "Главная улица" :ROOM-LONG-DESCRIPTION
+   "С запада на восток идёт главная улица." :ROOM-FLAGS NIL :ROOM-TYPE :CITY
+   :COORD (2 2) :WEST-EXIT (:EXIT-DESCRIPTION "Главная улица" :DOOR NIL)
+   :EAST-EXIT (:EXIT-DESCRIPTION "Городская площадь" :DOOR NIL) :NORTH-EXIT NIL
+   :SOUTH-EXIT NIL)
+  (:ROOM-SHORT-DESCRIPTION "Городская площадь" :ROOM-LONG-DESCRIPTION
+   "Площать неболшого городка. Жизнь в городе неспешна, и люди собираются, обмениваются новостями и просто судачат о соседях."
+   :ROOM-FLAGS NIL :ROOM-TYPE :CITY :COORD (3 2) :WEST-EXIT
+   (:EXIT-DESCRIPTION "Главная улица" :DOOR NIL) :EAST-EXIT
+   (:EXIT-DESCRIPTION "Тупик." :DOOR NIL) :NORTH-EXIT
+   (:EXIT-DESCRIPTION "Старая улочка" :DOOR NIL) :SOUTH-EXIT
+   (:EXIT-DESCRIPTION "Банк." :DOOR NIL))
+  (:ROOM-SHORT-DESCRIPTION "Тупик." :ROOM-LONG-DESCRIPTION
+   "Эта улочка ведёт в тупик. Отбившаяся от рук малышня исписала все стены вокруг."
+   :ROOM-FLAGS NIL :ROOM-TYPE :CITY :COORD (4 2) :WEST-EXIT
+   (:EXIT-DESCRIPTION "Городская площадь" :DOOR NIL) :EAST-EXIT NIL :NORTH-EXIT
+   NIL :SOUTH-EXIT NIL)
+  (:ROOM-SHORT-DESCRIPTION "Жилые дома" :ROOM-LONG-DESCRIPTION
+   "Вы идёте по улице, а кругом стоят дома, из которых доносятся возгласы горожан. На юге дома становятся всё более и более заброшенными и обветшалыми."
+   :ROOM-FLAGS NIL :ROOM-TYPE :CITY :COORD (1 3) :WEST-EXIT NIL :EAST-EXIT NIL
+   :NORTH-EXIT (:EXIT-DESCRIPTION "Главная улица" :DOOR NIL) :SOUTH-EXIT
+   (:EXIT-DESCRIPTION "Тёмный закоулок" :DOOR NIL))
+  (:ROOM-SHORT-DESCRIPTION "Банк." :ROOM-LONG-DESCRIPTION
+   "В центре комнаты вы видите громадный сейф, по стенам расклеены плакаты, обещающие небывалые проценты по кредитам. Вас приветствует кассир. Сразу понятно, что здесь банк."
+   :ROOM-FLAGS NIL :ROOM-TYPE :INDOORS :COORD (3 3) :WEST-EXIT NIL :EAST-EXIT
+   NIL :NORTH-EXIT (:EXIT-DESCRIPTION "Городская площадь" :DOOR NIL)
+   :SOUTH-EXIT NIL)
+  (:ROOM-SHORT-DESCRIPTION "Тёмный закоулок" :ROOM-LONG-DESCRIPTION
+   "Вы стоите в крайне неприглядном месте. Кругом крайне мало света и воняет тоже основательно... Ясно, что этот квартал заброшен и давно не убирался."
+   :ROOM-FLAGS NIL :ROOM-TYPE :CITY :COORD (1 4) :WEST-EXIT NIL :EAST-EXIT NIL
+   :NORTH-EXIT (:EXIT-DESCRIPTION "Жилые дома" :DOOR NIL) :SOUTH-EXIT NIL)))

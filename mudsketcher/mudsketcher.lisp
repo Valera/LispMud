@@ -6,7 +6,7 @@
     (:metaclass gobject:gobject-class)))
 
 (defparameter *src-location* (asdf:component-pathname (asdf:find-system :mudsketcher)))
-(defparameter *edited-zone* (lispmud::load-zone (merge-pathnames "content/1.lzon" *src-location*)))
+(defparameter *edited-zone* (lispmud::load-zone (merge-pathnames "content/2.lzon" *src-location*)))
 (defparameter *selected-room* nil)
 
 (defstruct name-keyword name keyword)

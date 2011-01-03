@@ -99,3 +99,17 @@
 		 (list (format nil "письмо") "его")))
       (iter (for m in messages)
 	    (push (make-instance 'letter :text (third m)) (inventory *player*))))))
+
+(defclass standard-mob (mob)
+  ((enter-verb :initarg :enter-verb :reader enter-verb)
+   (leave-verb :initarg :leave-verb :reader leave-verb))
+  (:documentation "Класс для удобства автоматического создания мобов"))
+
+(defun make-mob-from-plist (plist)
+  (apply 'make-instance 'mob plist))
+
+(defun plist-from-mob (mob)
+  (with-accessors ((n name) (d description)) mob
+    (list
+     :name n
+     :description d)))

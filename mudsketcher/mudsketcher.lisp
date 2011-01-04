@@ -43,6 +43,7 @@
 	   (drawing-area (builder-get-object builder "drawingarea1"))
 	   (mob-list-view (builder-get-object builder "treeview2"))
 	   (current-mob nil)
+	   (f-change-mob-name nil)
 	   (mob-hash (make-hash-table :test 'equal))
 	   (mob-editor-name (builder-get-object builder "mob-name-entry"))
 	   (mob-editor-enter-verb (builder-get-object builder "mob-enter-verb-entry"))
@@ -108,11 +109,18 @@
                           (when (eq :accept (dialog-run d))
                             (setf file-name (file-chooser-filename d)
 				  (zone canvas) (load-zone file-name))
+			    (iter (for mob-spec in (mobs-spec (zone canvas)))
+				  (for name = (getf mob-spec :name))
+				  (store-add-item mob-list name)
+				  (setf (gethash name mob-hash) mob-spec))
 			    (full-update canvas))
 			  (object-destroy d)))
                (save (&rest args) (declare (ignore args))
                      (if file-name
-			 (save-zone (zone canvas) file-name)
+			 (progn
+			   (save-mob-options current-mob)
+			   (setf (mobs-spec (zone canvas)) (hash-table-values mob-hash))
+			   (save-zone (zone canvas) file-name))
                          (save-as)))
                (save-as (&rest args) (declare (ignore args))
                         (let ((d (make-instance 'file-chooser-dialog :action :save :title "Save file")))
@@ -141,6 +149,7 @@
 		   (cell-layout-add-attribute c renderer "text" 0)))
 	       (add-mob (&rest args)
 		 (declare (ignore args))
+		 (setf f-change-mob-name nil)
 		 (let ((new-mob-id (format nil "new mob ~a" (incf mob-number-factory))))
 		   (store-add-item mob-list new-mob-id)
 		   (tree-view-set-cursor mob-list-view
@@ -148,14 +157,33 @@
 		   (setf current-mob new-mob-id)
 		   (setf (gethash new-mob-id mob-hash)
 			 (list :name new-mob-id))
-		   (populate-mob-options new-mob-id)))
-;	       (remove-mob (&rest args)
-;		 (declare (ignore args))
-;		 (store-
+		   (populate-mob-options new-mob-id)
+		   (tree-view-set-cursor mob-list-view (tree-model-path mob-list (tree-model-iter-from-string mob-list (format nil "~A" (1- (store-items-count mob-list)))))))
+		 (setf f-change-mob-name t))
+	       (remove-mob (&rest args)
+		 (declare (ignore args))
+		 (when current-mob
+		   (remhash current-mob mob-hash)
+		   (store-remove-item mob-list current-mob :test #'string=)))
+	       (mob-name-changed (entry)
+		 (when f-change-mob-name
+		   (remhash current-mob mob-hash)
+		   (setf current-mob (entry-text entry))
+		   (save-mob-options current-mob)
+		   ;; ACTUNG!!! FIXME!!!
+		   (setf
+		    (aref (gtk::store-items mob-list)
+			  (parse-integer (tree-model-iter-to-string
+					  mob-list
+					  (tree-model-iter-by-path
+					   mob-list
+					   (tree-view-get-cursor mob-list-view)))))
+		    (entry-text entry))
+		   (widget-queue-draw mob-list-view)))
 	       (change-edited-mob (tree-view)
+		 (debug-out (hash-table-count mob-hash))
 		 (when current-mob
 		   (save-mob-options current-mob))
-#+nil		 (debug-out (gethash current-mob mob-hash))
 		 (setf current-mob (tree-model-item (tree-view-model tree-view)
 						    (tree-view-get-cursor tree-view)))
 		 (populate-mob-options current-mob))
@@ -232,10 +260,11 @@
 	(connect-signal zone-settings-action "activate" #'zone-settings)
 	(connect-signal disconnect-action "activate" #'disconnect-exits)
 	(connect-signal add-mob-action "activate" #'add-mob)
-;	(connect-signal remove-mob-action "activate" #'remove-mob)
+	(connect-signal remove-mob-action "activate" #'remove-mob)
 	(initialize-mob-list mob-list mob-list-view)
 	(setf (tree-view-model mob-list-view) mob-list)
 	(connect-signal mob-list-view "cursor-changed" #'change-edited-mob)
+	(connect-signal mob-editor-name "changed" #'mob-name-changed)
 	
 #+nil	(connect-signal window "key-press-event"
 			(lambda (&rest args)

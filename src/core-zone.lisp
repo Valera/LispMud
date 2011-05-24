@@ -63,11 +63,12 @@
 	  (pvalue room)
 	  (destructuring-bind
 		(&key ((:coord (x y)))
-		      room-short-description room-long-description room-flags room-type
+		      room-class room-short-description room-long-description room-flags room-type
 		      west-exit east-exit north-exit south-exit)
 	      room
+	    (assert (subtypep room-class 'myroom))
 	    (setf (aref map y x)
-		  (make-instance 'myroom :short-description room-short-description
+		  (make-instance room-class :short-description room-short-description
 				 :description room-long-description
 				 :place-type room-type
 				 :west-exit west-exit :east-exit east-exit

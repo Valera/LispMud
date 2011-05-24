@@ -6,7 +6,7 @@
     (:metaclass gobject:gobject-class)))
 
 (defparameter *src-location* (asdf:component-pathname (asdf:find-system :mudsketcher)))
-(defparameter *edited-zone* (lispmud::load-zone (merge-pathnames "content/2.lzon" *src-location*)))
+(defparameter *edited-zone* (lispmud::load-zone (merge-pathnames "content/test.lzon" *src-location*)))
 (defparameter *selected-room* nil)
 
 (defstruct name-keyword name keyword)
@@ -277,7 +277,7 @@
 #+nil	(connect-signal window "key-press-event"
 			(lambda (&rest args)
 				(format *myout* "~{~a~%~}~%" args)))
-	(connect-canvas-signals canvas drawing-area)
+	(connect-canvas-signals canvas drawing-area :draw-mode :room-classes)
 	(setf (select-cb canvas) #'room-select)
 	(setf (unselect-cb canvas) #'room-unselect)
 	(widget-show window)))))

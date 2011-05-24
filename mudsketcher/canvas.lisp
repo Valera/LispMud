@@ -102,7 +102,9 @@
 			    (return-from handle-pointer-move item)))))
 	    (setf (hover-item c) nil))))))
 
-(defun connect-canvas-signals (canvas drawing-area)
+(defvar *draw-mode* :normal)
+
+(defun connect-canvas-signals (canvas drawing-area &key (draw-mode :normal))
   (setf (drawing-area canvas) drawing-area)
   (connect-signal drawing-area "realize"
 		  #'(lambda (widget)
@@ -119,8 +121,9 @@
 		      (multiple-value-bind (w h) (gdk:drawable-get-size (widget-window widget))
 			(with-gdk-context (ctx (widget-window widget))
 			  (with-context (ctx)
-			    (cairo-draw canvas w h ctx)
-			    nil)))))
+			    (let ((*draw-mode* draw-mode))
+			      (cairo-draw canvas w h ctx)
+			      nil))))))
   (connect-signal drawing-area "button_press_event"
 		  #'(lambda (widget event)
 		      (handle-button-press canvas event 200 200)

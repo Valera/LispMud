@@ -25,6 +25,17 @@
       (set-source-rgb 0 0 0)
       (stroke)))
 
+(defun show-text-aligned (text x y x-align y-align &optional
+			  (context *context*))
+  "Show text aligned relative to (x,y)."
+  (with-context (context)
+    (multiple-value-bind (x-bearing y-bearing width height)
+	(text-extents text)
+      (move-to (- x (* width x-align) x-bearing)
+	       (- y (* height y-align) y-bearing))
+      (show-text text))))
+
+
 (defmethod render-item (canvas (room myroom) x y mode selected-p hover-p &key data)
   (declare (ignore canvas data mode))
   (when hover-p
@@ -44,15 +55,22 @@
 		      (:indoors cl-colors:+yellow+)
 		      (:city cl-colors:+brown4+)
 		      (otherwise cl-colors:+grey100+)))
-	(room-size 20))
-    (set-line-width 2)
-    (rectangle (- x (/ room-size 2)) (- y (/ room-size 2))
-	       room-size room-size)
-    (set-source-color fill-color)
-    (fill-preserve)
-    (set-source-rgb 1 0 0)
-    (stroke)))
-
+	   (room-size 20))
+       (set-line-width 2)
+       (rectangle (- x (/ room-size 2)) (- y (/ room-size 2))
+		  room-size room-size)
+       (set-source-color fill-color)
+       (fill-preserve)
+       (set-source-rgb 1 0 0)
+       (stroke)
+      (print (class-of room) *debug-out*)
+       (when-let ((caption (case (class-name (class-of room))
+			(lm:bank-room "$")
+			(lm:hotel-room "H"))))
+	 (set-source-rgba 0 0 0 0.8)
+	 (show-text-aligned caption x y 0.5 0.5)
+	 (stroke))))
+    
 (defmethod bound-rect ((room myroom))
   (list -12 -12 24 24))
 

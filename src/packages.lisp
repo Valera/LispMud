@@ -19,7 +19,7 @@
    dx-for-direction dy-for-direction
    room-about message-to-visitors
    add-trigger process-room-triggers
-   myroom service-room bank-room shop-room store-room guild-room
+   myroom service-room bank-room shop-room store-room guild-room hotel-room
    ;; core-zone.lisp
    #:zone
    #:name #:id #:map-array #:entry-rooms #:mobs-spec #:mobs-counters

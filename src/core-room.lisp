@@ -154,3 +154,12 @@
 
 (defclass shop-room (service-room)
   ((price-list :accessor price-list :initarg :price-list)))
+
+(defclass bank-room (service-room)
+  ())
+
+(defclass hotel-room (service-room)
+  ())
+
+
+

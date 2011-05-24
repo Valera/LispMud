@@ -236,6 +236,20 @@
 	    (format t "Содержание:~%~A~%" (text item))
 	    (format t "Вы порылись в инвентаре, но не смогли прочитать ничего, похожего на ~A.~%" (first items))))))
 
+(defun command-buy (&rest items)
+  (pvalue items)
+  (if (eq (class-of *player-room*) 'shop)
+      (if (= (length items) 1)
+	  (let ((price-entry (find (first items) (price-list *player-room*) 
+				   :key #'(lambda (entry) (getf entry :item-name) :test #'mudname-equal))))
+	    (if price-entry
+		(if (< (getf price-entry :price) (money *player*))
+		    (push (make-instance 'item :name (getf price-entry :item-name)) (inventory *player*))
+		    (format t "У вас недостаточно денег.~%"))
+		(format t "Такая вещь здесь не продаётся.~%")))
+	  (format t "Можно купить только одну вещь за раз.~%"))
+      (format t "Вы не в магазине.~%")))
+		
 (defun command-list-commands ()
   "Комманда для вывода списка других комманд"
   (format t

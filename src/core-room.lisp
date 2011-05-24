@@ -148,3 +148,9 @@
       (process-trigger-list (triggers mob)))
 #+(or)    (dolist (player (players room))
       (process-trigger-list (triggers player)))))
+
+(defclass service-room (myroom)
+  ((service-mob :accessor service-mob :initarg :service-mob)))
+
+(defclass shop-room (service-room)
+  ((price-list :accessor price-list :initarg :price-list)))

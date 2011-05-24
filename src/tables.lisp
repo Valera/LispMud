@@ -5,7 +5,7 @@
                      name text not null,
                      password text not null,
                      online_p boolean not null,
-                     money_in_bank integer not null,
+                     money_in_bank integer not null default 0,
                      primary key (name) );"))
 
 (defun create-letters ()
@@ -18,3 +18,9 @@
 (defun total-drop ()
   (pomo:execute "drop table letters")
   (pomo:execute "drop table players"))
+
+(defun recreate-all-tables (db-name db-user db-password db-host)
+  (pomo:with-connection (list db-name db-user db-password db-host)
+    (total-drop)
+    (create-players)
+    (create-letters)))

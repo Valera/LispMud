@@ -1,0 +1,15 @@
+On local PGSQL database, do following:
+
+  sudo -u postgres createuser -D -A -P lispmud
+  sudo -u postgres createdb -O lispmud lispmud
+
+These commands will create user "lispmud" and "lispmud" database owned by this user.
+
+In REPL, load :lispmud system and create tables with
+
+  (lispmud:recreate-all-tables "lidpmud" "lispmud" "password" "localhost")
+
+Then copy "sample-config.lisp" to "config.lisp" and edit it to add database
+connection details. After this, launch the server by
+
+  (lipsmud:main :config-file "/home/vfedotov/projects/LispMud/config.lisp")

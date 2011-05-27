@@ -16,6 +16,7 @@
 
 ;; Как быть с протечками аргументов fsm и fsm, input?
 ;; FIXME: проверить, существуют ли initial-state-name final-state-name
+;; Пример использования см. ниже
 (defmacro generate-fsm (name initial-state-name final-state-name slots &body state-forms)
   (declare (ignore final-state-name))
   (let ((enter-functions (make-hash-table))
@@ -79,10 +80,10 @@
 						(return-from process-input1)))))
 			   ,@(rest form)))))))))))
 
-;; Конечный автомат для отладки...
+;; Определяем конечный автомат для отладки...
 (generate-fsm simple-fsm start finish
-    ((name :accessor name)
-     (passwd :accessor passwd))
+    ((name :accessor name :initarg :name)
+     (passwd :accessor passwd :initarg :passwd))
   (start
    :on-enter (format t "Введите 1, чтобы зарегистрироваться, или 2, чтобы войти в игру")
    :on-input (let ((n (parse-integer input)))
@@ -96,3 +97,9 @@
 	       (next-state finish))
    :on-leave (format t "Good-bye!"))
   (finish :on-enter (format t "Finish!")))
+
+;; Отлаживаем его...
+(defun debug-simple-fsm ()
+  (let ((fsm (make-instance 'simple-fsm :name "user" :passwd "passwd")))
+    (iter (until (eq 'finish (current-state fsm)))
+	  (process-input1 fsm (read-line)))))

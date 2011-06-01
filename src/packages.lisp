@@ -14,7 +14,7 @@
    ;; core-room.lisp
    *exits* reverse-direction direction-name myroom
    description place-type mobs players items-on-floor triggers
-   west-exit east-exit south-exit north-exit
+   west-exit east-exit south-exit north-exit editor-info
    exit dest-room can-pass passage door hotel portal
    dx-for-direction dy-for-direction
    room-about message-to-visitors

@@ -30,7 +30,9 @@
    (west-exit :accessor west-exit :initform nil :initarg :west-exit)
    (east-exit :accessor east-exit :initform nil :initarg :east-exit)
    (south-exit :accessor south-exit :initform nil :initarg :south-exit)
-   (north-exit :accessor north-exit :initform nil :initarg :north-exit)))
+   (north-exit :accessor north-exit :initform nil :initarg :north-exit)
+   (editor-info :accessor editor-info :initform nil
+		:documentation "Слот может использоваться редактором зон для служебных нужд. Сам LispMud его не использует.")))
 
 (defclass exit ()
   ((dest-room :accessor dest-room :initarg :dest-room)))

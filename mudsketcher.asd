@@ -11,7 +11,8 @@
   :components ((:module "mudsketcher"
 			:serial t
 			:components ((:file "packages")
-				     (:file "mudsketcher")
 				     (:file "canvas")
-				     (:file "zone-canvas")))))
+				     (:file "zone-canvas")
+				     (:file "mob-editor")
+				     (:file "mudsketcher")))))
 

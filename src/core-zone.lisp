@@ -40,7 +40,8 @@
 			      (flet ((exit-sexpr (room-on-exit)
 				       (when room-on-exit
 					 (list :exit-description (short-description (dest-room room-on-exit)) :door nil))))
-				(collect (list :room-short-description (short-description r)
+				(collect (list :room-class (or (getf (editor-info r) :room-class) (class-of r))
+					       :room-short-description (short-description r)
 					       :room-long-description (description r)
 					       :room-flags ()
 					       :room-type (place-type r)
@@ -55,7 +56,8 @@
   (with-open-file (stream filename)
     (destructuring-bind (&key zone-name zone-rooms mobs-spec
 			      ((:zone-size (size-x size-y))))
-	(read stream)
+	(let ((*package* (find-package :lispmud)))
+	  (read stream))
       (pvalue zone-name zone-rooms (list size-x size-y) mobs-spec)
       (let ((map (make-array (list size-x size-y) :initial-element nil))
 	    (entry-rooms nil))

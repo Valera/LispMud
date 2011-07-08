@@ -40,7 +40,8 @@
 			      (flet ((exit-sexpr (room-on-exit)
 				       (when room-on-exit
 					 (list :exit-description (short-description (dest-room room-on-exit)) :door nil))))
-				(collect (list :room-class (or (getf (editor-info r) :room-class) (class-of r))
+				(collect (list :room-class (or (getf (editor-info r) :room-class)
+							       (class-name (class-of r)))
 					       :room-short-description (short-description r)
 					       :room-long-description (description r)
 					       :room-flags ()
@@ -125,12 +126,22 @@
   (let ((mobs-type-count (length (mobs-spec zone))))
     (setf (mobs-counters zone) (make-array mobs-type-count :initial-element 0))
     (setf (mobs-max-numbers zone) (make-array mobs-type-count))
-    (iter (for (mob-class x y respawn-rate max-number) in (mobs-spec zone))
+    (iter (for mob-spec in (mobs-spec zone))
+	  (for x = 1)
+	  (for y = 1)
+	  (for class = (let ((type (getf mob-spec :type)))
+			 (case type 
+			   (:regular 'standard-mob)
+			   (:banker 'banker))))
+	  (print (list '!!! class (getf mob-spec :type)))
 	  (for i upfrom 0)
-	  (push (make-instance mob-class :zone zone :mob-room (aref (map-array zone) x y))
+	  (remf mob-spec :type)
+	  (push (make-mob-from-plist class
+		 (concatenate 'list mob-spec
+			      (list :zone zone :mob-room (aref (map-array zone) x y))))
 		(mobs (aref (map-array zone) x y)))
 	  (incf (aref (mobs-counters zone) i))
-	  (setf (aref (mobs-max-numbers zone) i) max-number))))
+#+nil	  (setf (aref (mobs-max-numbers zone) i) max-number))))
 
 ;; Временная функция для отладки. Добавляет в комнату с координатами (1, 1) собаку.
 ;; TODO:typo

@@ -100,16 +100,62 @@
       (iter (for m in messages)
 	    (push (make-instance 'letter :text (third m)) (inventory *player*))))))
 
+;; STANDARD-MOB
+
 (defclass standard-mob (mob)
   ((enter-verb :initarg :enter-verb :reader enter-verb)
-   (leave-verb :initarg :leave-verb :reader leave-verb))
+   (leave-verb :initarg :leave-verb :reader leave-verb)
+   (move-interval :initarg :move-interval :reader move-interval)
+   (animation-1 :initarg :animation-1 :reader animation-1)
+   (animation-1-timer :initarg :animation-1-timer :reader animation-1-timer)
+   (animation-2 :initarg :animation-2 :reader animation-2)
+   (animation-2-timer :initarg :animation-2-timer :reader animation-2-timer))
   (:documentation "Класс для удобства автоматического создания мобов"))
 
-(defun make-mob-from-plist (plist)
-  (apply 'make-instance 'mob plist))
+(defun make-mob-from-plist (class plist)
+  (apply 'make-instance class plist))
 
 (defun plist-from-mob (mob)
   (with-accessors ((n name) (d description)) mob
     (list
      :name n
      :description d)))
+
+(defgeneric schedule-mob-events (mob room zone))
+(defgeneric move-to-other-room (mob current-room))
+(defgeneric leave-message (mob room-from room-to direction))
+(defgeneric enter-message (mob room-from room-to direction))
+(defgeneric do-animation1 (mob room))
+(defgeneric do-animation2 (mob room))
+
+(defmethod schedule-mob-events ((mob standard-mob) room zone)
+  ())
+
+(defmethod move-to-other-room ((mob standard-mob) current-room)
+  (let* ((neighbour-rooms-and-directions (open-rooms-and-directions (mob-room mob)))
+	 (next-room-and-direction (elt neighbour-rooms-and-directions (random (length neighbour-rooms-and-directions))))
+	 (next-room (first next-room-and-direction))
+	 (direction (second next-room-and-direction)))
+    (when next-room
+      (leave-message mob (mob-room mob) next-room direction)
+      (enter-message mob (mob-room mob) next-room direction))))
+
+(defmethod leave-message ((mob standard-mob) room-from room-to direction)
+  (message-to-visitors
+   room-from
+   (format nil "~A ~A на ~A.~%"
+	   (name mob) (leave-verb mob) (direction-name direction))))
+
+(defmethod enter-message ((mob standard-mob) room-from room-to direction)
+  (message-to-visitors
+   room-to
+   (format nil "~A ~A с ~A.~%"
+	   (name mob) (enter-verb mob)
+	   (word-rp (direction-name (reverse-direction direction))))))
+
+;; BANK-MOB
+
+(defclass banker (standard-mob)
+  ((withdraw-phrase :initarg :withdraw-phrase :reader withdraw-phrase)
+   (deposit-phrase :initarg :deposit-phrase :reader deposit-phrase)))
+

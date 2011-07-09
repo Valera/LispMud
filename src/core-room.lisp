@@ -22,6 +22,7 @@
    (description :accessor description :initform "" :initarg :description)
    (place-type :accessor place-type :initform nil :initarg :place-type)
    (mobless-p :accessor mobless-p :initform nil :initarg :mobless-p)
+   (flags :accessor flags :initform nil :initarg :flags)
    (mobs :accessor mobs :initform nil)
    (players :accessor players :initform nil)
    (items-on-floor :accessor items-on-floor :initform
@@ -96,11 +97,13 @@
 (defgeneric message-to-visitors (room message))
 (defmethod message-to-visitors ((room myroom) message)
   (iter (for p in (players room))
-	(write-string message (output p))))
+	(fresh-line (output p))
+	(write-line message (output p))))
 
 (defun message-to-visitors-except (player room message)
   (iter (for p in (remove player (players room)))
-	(write-string message (output p))))
+	(fresh-line (output p))
+	(write-line message (output p))))
 
 (defgeneric room-about (room))
 (defmethod room-about ((room myroom))

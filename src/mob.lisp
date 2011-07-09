@@ -36,52 +36,12 @@
 
 (defgeneric go-out (mob room direction))
 (defmethod go-out ((mob mob) (room myroom) direction)
-  (deletef (mobs room) mob)
-;  (deletef (mobs room) mob)
-  ;(setf (room mob) nil)
-#+nil  (queue-mesg (room mob) :leave (format nil "~a вышел из комнаты" (name mob))))
+  (deletef (mobs room) mob))
 
 (defgeneric enter (mob room direction))
 (defmethod enter ((mob mob) (room myroom) direction)
   (setf (mob-room mob) room)
-  (push mob (mobs room))
-  ;(setf (room mob) room)
-#+nil  (queue-mesg (room mob) :enter (format nil "~a вышел из комнаты" (name mob))))
-
-;; Сделать что-нибудь, чтобы казаться настоящим.
-(defgeneric idle-animation (mob))
-
-
-;; Собака
-(defclass dog (mob) ()
-  (:default-initargs :name "собака"))
-
-(defmethod initialize-instance :after ((dog dog) &rest initargs)
-  (declare (ignore initargs))
-  (add-event 3 #'(lambda () (idle-animation dog)) nil 20)
-  (add-event 4 #'(lambda () (move dog)) nil 8))
-
-(defmethod go-out :before ((dog dog) room direction)
-  (message-to-visitors room (format nil "Собака ушла на ~a.~%" (direction-name direction))))
-
-(defmethod enter :after ((dog dog) room direction)
-  (message-to-visitors room (format nil "Собака пришла с ~a.~%" (word-rp (direction-name direction)))))
-
-(defmethod idle-animation ((mob dog))
-  (iter (for p in (players (mob-room mob)))
-	(format (output p) "~&Собака почесала себя лапой за ухом и зевнула.~%")))
-
-;; Гном из банка.
-(defclass bank-gnome (mob) ()
-  (:default-initargs :name "седой гном"))
-
-(defmethod initialize-instance :after ((gnome bank-gnome) &rest initargs)
-  (declare (ignore initargs))
-  (add-event 3 #'(lambda () (idle-animation gnome)) nil 40))
-
-(defmethod idle-animation ((mob bank-gnome))
-  (iter (for p in (players (mob-room mob)))
-	(format (output p) "~&Седой гном перелистнул страницу в банковской книге и щёлкнул костяшками на счётах.~%")))
+  (push mob (mobs room)))
 
 (defclass mail-dragon (mob) ()
   (:default-initargs :name "Синий дракончик"))
@@ -122,22 +82,40 @@
      :description d)))
 
 (defgeneric schedule-mob-events (mob room zone))
-(defgeneric move-to-other-room (mob current-room))
+(defgeneric move-to-other-room (mob))
 (defgeneric leave-message (mob room-from room-to direction))
 (defgeneric enter-message (mob room-from room-to direction))
 (defgeneric do-animation1 (mob room))
 (defgeneric do-animation2 (mob room))
 
 (defmethod schedule-mob-events ((mob standard-mob) room zone)
-  ())
+  (bind:bind (((:slots animation-1 animation-1-timer
+		       animation-2 animation-2-timer
+		       move-interval)
+	       mob)
+	      ((:flet schedule-animation (animation animation-timer))
+	       (when (and animation (not (emptyp animation))
+			  (/= 0 animation-timer))
+		 (print (list 1 animation animation-timer))
+		 (add-event animation-timer
+			    #'(lambda () (message-to-visitors (mob-room mob) animation))
+			    nil animation-timer))))
+    (schedule-animation animation-1 animation-1-timer)
+    (schedule-animation animation-2 animation-2-timer)
+    (print (list 3 move-interval))
+    (unless (= 0 move-interval)
+      (add-event move-interval #'(lambda () (move-to-other-room mob))
+		 nil move-interval))))
 
-(defmethod move-to-other-room ((mob standard-mob) current-room)
+(defmethod move-to-other-room ((mob standard-mob))
   (let* ((neighbour-rooms-and-directions (open-rooms-and-directions (mob-room mob)))
 	 (next-room-and-direction (elt neighbour-rooms-and-directions (random (length neighbour-rooms-and-directions))))
 	 (next-room (first next-room-and-direction))
 	 (direction (second next-room-and-direction)))
     (when next-room
       (leave-message mob (mob-room mob) next-room direction)
+      (go-out mob (mob-room mob) direction)
+      (enter mob next-room direction)
       (enter-message mob (mob-room mob) next-room direction))))
 
 (defmethod leave-message ((mob standard-mob) room-from room-to direction)

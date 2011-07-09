@@ -73,7 +73,7 @@
 	    (setf (aref map y x)
 		  (make-instance room-class :short-description room-short-description
 				 :description room-long-description
-				 :place-type room-type
+				 :place-type room-type :flags room-flags
 				 :west-exit west-exit :east-exit east-exit
 				 :north-exit north-exit :south-exit south-exit))
 	    (push (aref map y x) entry-rooms)))
@@ -133,13 +133,13 @@
 			 (case type 
 			   (:regular 'standard-mob)
 			   (:banker 'banker))))
-	  (print (list '!!! class (getf mob-spec :type)))
-	  (for i upfrom 0)
 	  (remf mob-spec :type)
-	  (push (make-mob-from-plist class
-		 (concatenate 'list mob-spec
-			      (list :zone zone :mob-room (aref (map-array zone) x y))))
-		(mobs (aref (map-array zone) x y)))
+	  (for i upfrom 0)
+	  (for mob =  (make-mob-from-plist class
+					   (concatenate 'list mob-spec
+							(list :zone zone :mob-room (aref (map-array zone) x y)))))
+	  (push mob (mobs (aref (map-array zone) x y)))
+	  (schedule-mob-events mob (aref (map-array zone) x y) zone)
 	  (incf (aref (mobs-counters zone) i))
 #+nil	  (setf (aref (mobs-max-numbers zone) i) max-number))))
 

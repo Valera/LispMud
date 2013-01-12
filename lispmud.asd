@@ -7,8 +7,9 @@
  
 (defsystem :lispmud
   :serial t
-  :depends-on (:split-sequence :alexandria :iterate :sb-queue :postmodern
-			       :bordeaux-threads :usocket :cl-store :metabang-bind)
+  :depends-on (#:split-sequence #:alexandria #:iterate #:sb-queue #:postmodern
+                                #:bordeaux-threads #:usocket #:cl-store
+                                #:metabang-bind #:fiveam)
   :components ((:module "src"
 			:serial t
 			:components ((:file "packages" )
@@ -29,6 +30,7 @@
 				     (:file "core-streams")
 				     (:file "core-server")
 				     (:file "input-handlers")
+                                     (:file "tables")
 				     ;; content
 				     (:file "mob")
 				     (:file "main")

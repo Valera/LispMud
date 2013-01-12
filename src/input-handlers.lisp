@@ -14,7 +14,7 @@
     (process-input1 fsm (string-trim '(#\Space #\Newline #\Return) input))
     (when (eql (current-state fsm) 'finish-login)
       (setf *player* (make-instance 'player :name (name fsm) :output   *standard-output*))
-      (if (set-user-online *player*)
+      (if (try-set-user-online *player*)
 	  (progn
 	    (push *player* (players *player-room*))
 	    (if (have-mail-for *player*)

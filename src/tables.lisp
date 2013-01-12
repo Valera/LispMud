@@ -16,8 +16,8 @@
                      message_text text not null );"))
 
 (defun total-drop ()
-  (pomo:execute "drop table letters")
-  (pomo:execute "drop table players"))
+  (pomo:execute "drop table if exists letters")
+  (pomo:execute "drop table if exists players"))
 
 (defun recreate-all-tables (db-name db-user db-password db-host)
   (pomo:with-connection (list db-name db-user db-password db-host)

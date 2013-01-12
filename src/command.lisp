@@ -79,7 +79,7 @@
   (signal 'disconnect-client))
 
 (defun command-look ()
-  "комманда, печатающая которкие описания выходов"
+  "комманда, печатающая короткие описания выходов"
   (dolist (direction *exits*)
     (if (exit *player-room* direction)
 	(format t "  ~a~t: ~a~%"
@@ -133,7 +133,7 @@
 
 (defun command-chat (&rest words)
   "БОЛТАТЬ: ваши слова услышат все игроки в игре"
-  (iter (for p in *online-users*)
+  (iter (for p in (online-user-names))
 	(color *cc-green* (output p))
 	(format (output p) "~a: \"~{~a~^ ~}\"~%~%" (name *player*) words)
 	(color *cc-reset* (output p))))
@@ -259,7 +259,7 @@
   ЗАПАД  -- идти на запад
   ВОСТОК -- идти на восток
   ВЫХОДЫ -- перечислить выходы из комнаты
-  ОГЛЯДЕТСЯ -- напечатать подробное описание комнаты
+  ОГЛЯДЕТЬСЯ -- напечатать подробное описание комнаты
   КАРТА -- напечатать карту зоны
 Работа с вещами:
   ВЗЯТЬ ВЕЩЬ -- взять ВЕЩЬ с пола

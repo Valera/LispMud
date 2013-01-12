@@ -1,31 +1,30 @@
 ;;; userdb.lisp
 
-;FIXME: Не позволять одновременных логинов!
 ;FIXME: написать тесты!
 
 (in-package :lispmud)
 
-(defvar *online-users* nil)
-
 (defun reset-online-users ()
   "Mark all users offile."
   (pomo:with-transaction ()
-    (setf *online-users* nil)
     (pomo:execute (:update 'players :set 'online-p nil))))
+
+(defun online-user-names ()
+  (pomo:with-transaction ()
+    (pomo:execute (:select 'name :from 'players :where (:= 'online-p t)))))
 
 (defun users-db ()
   "List of all users database records."
   (pomo:with-transaction ()
     (pomo:query (:select 'name 'password 'online-p :from 'players))))
 
-(defun set-user-online (player)
+(defun try-set-user-online (player)
   "Mark user as being online."
   (pomo:with-transaction ()
-    (if (pomo:query (:select 'online-p :from 'players :where (:= 'online-p nil)))
+    (if (pomo:query (:select 'online-p :from 'players
+                             :where (:and (:= 'name (name player)) (:= 'online-p nil))))
 	;; Then: register user as beeing online, set online-p to nil.
-	(progn
-	  (pomo:execute (:update 'players :set 'online-p t :where (:= 'name (name player))))
-	  (push player *online-users*))
+        (pomo:execute (:update 'players :set 'online-p t :where (:= 'name (name player))))
 	;; Else: user already online, explicitly return nil.
 	nil)))
 
@@ -33,9 +32,7 @@
   "Mark user as being offline."
   (pomo:with-transaction ()
     (pomo:execute (:update 'players :set 'online-p nil
-			   :where (:= 'name (name player))))
-    (setf *online-users*
-	  (delete (name player) *online-users* :test #'string= :key 'name))))
+			   :where (:= 'name (name player))))))
 
 (defun valid-new-player-name-p (namestring)
   "Return T if new player name is valid player name, every letter is Russian."

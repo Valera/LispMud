@@ -56,16 +56,25 @@
         (5am:is (eq (run-test "hello world") nil))
         (5am:is (eq (run-test "") nil))))))
 
+(defun short-match-p (full-word short-word)
+  (let ((mismatch (mismatch short-word full-word)))
+    (or (not mismatch) (= mismatch (length short-word)))))
+
+(5am:test short-match-p
+  (5am:is (short-match-p "abc" "abc"))
+  (5am:is (short-match-p "abc" "ab"))
+  (5am:is (short-match-p "abc" "a"))
+  (5am:is (short-match-p "abc" ""))
+  (5am:is (not (short-match-p "abc" "abD"))))
+
 (defmacro word-dispatch (word &body clauses)
   `(when (plusp (length ,word))
      (cond
        ,@(iter (for (case-word . forms) in clauses)
 	       (collecting
 		 (if (not (eql case-word t))
-		     (let ((mismatch-gensym (gensym)))
-                       `((let ((,mismatch-gensym (mismatch ,word ,case-word)))
-                          (or (not ,mismatch-gensym) (= ,mismatch-gensym (length ,word))))
-                         ,@forms))
+                     `((short-match-p ,case-word ,word)
+                       ,@forms)
 		     `(t ,@forms)))))))
 
 (5am:test word-dispatch

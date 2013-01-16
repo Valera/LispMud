@@ -157,8 +157,6 @@
 (defclass service-room (myroom)
   ((service-mob :accessor service-mob :initarg :service-mob)))
 
-(defclass shop-room (service-room)
-  ((price-list :accessor price-list :initarg :price-list)))
 
 (defclass bank-room (service-room)
   ())

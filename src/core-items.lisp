@@ -3,7 +3,8 @@
 (in-package :lispmud)
 
 (defclass item ()
-  ((name :accessor name :initarg :name)
+  ((name :accessor name :initarg :name
+         :initform (error "Can not create ITEM without a name"))
    (description :accessor description)
    (price :accessor price)))
 
@@ -21,6 +22,11 @@
   (push item (inventory player))
   (format t "Вы взяли с пола ~a.~%" (word-vp item)))
 
+(defgeneric copy-obj (x))
+(defmethod copy-obj ((item item))
+  (make-instance (class-of item) :name (name item)
+                 :description (description item)
+                 :price (price item)))
 
 (defclass coin-heap (item)
   ((coins :accessor coins :initarg :coins))
@@ -34,6 +40,15 @@
   ((text :accessor text :initarg :text))
   (:default-initargs :name "письмо"))
 
+(defvar *items*
+  '((food :name "Чёрствый хлеб" :nutritiousness 50)
+    (food :name "Батон" :nutritiousness 100)
+    (food :name "Буханка" :nutritiousness 90)
+    (food :name "Булка с маком" :nutritiousness 150)))
+
+
+;(defclass food (item)
+;  ((
 
 ;(defclass wearable-item ()
 ;   (min-level :accessor min-level))

@@ -86,8 +86,9 @@
 		(case direction (:north "cевер") (:east "восток") (:south "юг") (:west "запад"))
 		(short-description (dest-room (exit *player-room* direction)))))))
 
-(defun command-exits ()
+(defun command-exits (&rest ignored-args)
   "комманда, печатающая список выходов из комнаты"
+  (declare (ignore ignored-args))
   (let 
       ((exits (remove nil (list (if (north-exit *player-room*) "север" nil)
 				(if (south-exit *player-room*) "юг" nil)
@@ -95,8 +96,9 @@
 				(if (east-exit *player-room*) "восток" nil)))))
     (format t "Вы видите выходы на ~{~a~^, ~}.~%" exits)))
 
-(defun command-map ()
+(defun command-map (&rest ignored-args)
   "Выводит на экран псевдографическую карту текущей зоны."
+  (declare (ignore ignored-args))
   (format t "~%")
   (iter (with map = (map-array *player-zone*))
 	(for y from 0 below (array-dimension map 0))
@@ -152,8 +154,9 @@
 	     (setf (items-on-floor *player-room*) (nset-difference (items-on-floor *player-room*) taken-items))))
       (write-line "Что вы хотите взять-то?")))
 
-(defun command-inventory ()
+(defun command-inventory (&rest args)
   "Команда для просмотра вещей в инвентаре."
+  (declare (ignore args))
   (let ((inventory (inventory *player*)))
     (if inventory
 	(progn
@@ -164,41 +167,56 @@
 	  (color *cc-reset*))
 	(write-line "У вас ничего нет. :("))))
 
-(defun command-deposit (sum-string)
+(defun command-deposit (&rest sum-string-arg)
   "Команда ВЛОЖИТЬ: вложить N монет в банк."
-  (let ((sum (parse-integer sum-string)))
-    (if (and (plusp sum) (<= sum (money *player*)))
-	(progn
-	  (decf (money *player*) sum)
-	  (deposit (name *player*) sum)
-	  (process-room-triggers *player-room* :bank-deposit-trigger *player* sum))
-	(format t "Извините, вложить в банк \"~a\" нельзя.~%" sum-string))))
+  (if (= 1 (length sum-string-arg))
+      (let ((sum (parse-integer (first sum-string-arg))))
+        (if (and (plusp sum) (<= sum (money *player*)))
+            (progn
+              (decf (money *player*) sum)
+              (deposit (name *player*) sum)
+              (process-room-triggers *player-room* :bank-deposit-trigger *player* sum))
+            (format t "Извините, вложить в банк \"~a\" нельзя.~%"
+                    (first sum-string-arg))))
+      (wrong-command t "ВЛОЖИТЬ" "<ЧИСЛО>")))
 
-(defun command-withdraw (sum-string)
+(defun wrong-command (stream command-name command-args)
+  (format stream "Неправильный вызов комманды ~A. Чтобы воспользоваться коммандой,~%"
+          command-name)
+  (format stream "введите~%        ~A ~A%" command-name command-args))
+
+(defun command-withdraw (&rest sum-string-arg)
   "Комманда СНЯТЬ: снять N монет со счёта в банке."
-  (let ((sum (parse-integer sum-string)))
-    (if (and (plusp sum) (<= sum (balance (name *player*))))
-	(if (withdraw (name *player*) sum)
-	    (incf (money *player*) sum)
-	    (format t "Извините. На вашем счёте слишком мало денег."))
-	(format t "Извините, но вы не можете снять со счёта \"~a\" монет.~%" sum-string))))
+  (if (= 1 (length sum-string-arg))
+      (let ((sum (parse-integer (first sum-string-arg))))
+        (if (and (plusp sum) (<= sum (balance (name *player*))))
+            (if (withdraw (name *player*) sum)
+                (incf (money *player*) sum)
+                (format t "Извините. На вашем счёте слишком мало денег."))
+            (format t "Извините, но вы не можете снять со счёта \"~a\" монет.~%"
+                    (first sum-string-arg))))
+      (wrong-command t "СНЯТЬ" "<ЧИСЛО>")))
 
-(defun command-balance ()
+(defun command-balance (&rest args)
   "Команда БАЛАНС: вывести баланс счёта в банке."
+  (declare (ignore args))
   (format t "На вашем счёте в банке ~a монет.~%" (balance (name *player*))))
 
-(defun command-transfer (person sum)
+(defun command-transfer (&rest person-and-sum-args)
   "Команда ПЕРЕВЕСТИ: перевести деньги на счёт другого игрока"
-  (let ((person (string-capitalize person))
-	(sum (handler-case (parse-integer sum)
-	       (parse-error () -1))))
-    (if (plusp sum)
-	(if (<= sum (balance *player*))
-	    (if (user-exists-p person)
-		(transfer *player* person sum)
-		(format t "Нет игрока с именем ~a.~%Укажите имя получателя полностью.~%" person))
-	    (format t "У вас нет таких денег. Надо быть эконемнее"))
-	(format t "Да введите же число по-человечески. Число болше нуля, что непонятного?~%"))))
+  (if (= 2 (length person-and-sum-args))
+      (let ((person (string-capitalize person))
+            (sum (handler-case (parse-integer sum)
+                   (parse-error () -1))))
+        (if (plusp sum)
+            (if (<= sum (balance *player*))
+                (if (user-exists-p person)
+                    (transfer *player* person sum)
+                    (format t "Нет игрока с именем ~A.~%Укажите имя получателя полностью.~%" person))
+                (format t "У вас нет таких денег. Надо быть экономнее"))
+            (format t "Да введите же число по-человечески. Число болше нуля, что непонятного?~%")))
+      (wrong-command t "ПЕРЕВЕСТИ" "ИМЯ" "ЧИСЛО")))
+  
 
 (defun command-mail (&rest subcommand-and-options)
   "Команда ПОЧТА: получить или написать письмо"
@@ -236,15 +254,26 @@
 	    (format t "Содержание:~%~A~%" (text item))
 	    (format t "Вы порылись в инвентаре, но не смогли прочитать ничего, похожего на ~A.~%" (first items))))))
 
+(defun command-list (&rest ignored)
+  "Вывести список товаров в магазине"
+  (declare (ignore ignored))
+  (if (eq (class-of *player-room*) 'shop-room)
+      (progn
+        (format t "    ЦЕНА  НАЗВАНИЕ~%")
+        (iter (for item in (price-list *player-room*))
+              (format t "~8D  ~A~%" (price item) (name item)))
+        (terpri))
+      (format t "Вы не в магазине.~%")))
+
 (defun command-buy (&rest items)
   (pvalue items)
-  (if (eq (class-of *player-room*) 'shop)
+  (if (eq (class-of *player-room*) 'shop-room)
       (if (= (length items) 1)
-	  (let ((price-entry (find (first items) (price-list *player-room*) 
-				   :key #'(lambda (entry) (getf entry :item-name) :test #'mudname-equal))))
-	    (if price-entry
-		(if (< (getf price-entry :price) (money *player*))
-		    (push (make-instance 'item :name (getf price-entry :item-name)) (inventory *player*))
+	  (let ((buy-item (find (first items) (price-list *player-room*) 
+                                :key #'name :test #'mudname-equal)))
+	    (if buy-item
+		(if (<= (price buy-item) (money *player*))
+		    (push (copy-obj buy-item) (inventory *player*))
 		    (format t "У вас недостаточно денег.~%"))
 		(format t "Такая вещь здесь не продаётся.~%")))
 	  (format t "Можно купить только одну вещь за раз.~%"))

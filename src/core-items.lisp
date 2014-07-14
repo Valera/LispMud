@@ -14,13 +14,30 @@
 
 (defgeneric take-item (room player item))
 (defmethod take-item :after (room player (item item))
-  (iter (for p in (remove player (players room)))
-	(format (output p) "~&~a поднял с пола ~a и положил к себе в инвентарь.~%"
-		(name player) (word-vp item))))
+  (message-to-visitors-except
+   player room (format (output p) "~&~a поднял с пола ~a и положил к себе в инвентарь.~%"
+                       (name player) (word-vp item))))
 
 (defmethod take-item (room player (item item))
   (push item (inventory player))
+  (with-items-collection items
+    (mongo:insert-op items (son "_id"
+                            "name" (name item)
+                                "class" (class-of item)
+                                "name" (name item)
+                                "description" (description item)
+                                "price" (price item))))
   (format t "Вы взяли с пола ~a.~%" (word-vp item)))
+
+(defgeneric drop-item (room player item))
+(defmethod drop-item (room player (item item))
+  (deletef (inventory player) item)
+  (format t "Вы бросили ~A на пол.~%" (word-vp item)))
+
+(defmethod drop-item :after (room player (item item))
+  (message-to-visitors-except
+   player room (format nil "~&~a поднял с пола ~a и положил к себе в инвентарь.~%"
+                       (name player) (word-vp item))))
 
 (defgeneric copy-obj (x))
 (defmethod copy-obj ((item item))

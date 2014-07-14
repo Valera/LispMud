@@ -8,6 +8,7 @@
 (defun put-to-store (person thing)
   (bt:with-recursive-lock-held (*store-lock*)
     (let ((person (if (stringp person) person (name person))))
+;      (with-collection
       (push thing (gethash person *store*)))))
 
 (defun take-from-store (person thing-name)

@@ -1,10 +1,10 @@
 ;;; lispmud.asd
- 
+
 (defpackage :lispmud-system
   (:use :cl :asdf))
 
 (in-package :lispmud-system)
- 
+
 (defsystem :lispmud
   :serial t
   :depends-on (#:split-sequence #:alexandria #:iterate #:sb-queue #:postmodern
@@ -15,6 +15,7 @@
 			:components ((:file "packages" )
 				     ;; core
 				     (:file "core-utils")
+                                     (:file "core-db")
 				     (:file "core-mail")
 				     (:file "rucase")
 				     (:file "color-codes")

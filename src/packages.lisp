@@ -5,14 +5,15 @@
   (:use :cl :alexandria :split-sequence :usocket
 	:sb-gray :iterate :bt)
   (:import-from #:bind #:bind)
-  (:import-from #:son-sugar #:son)
+;  (:import-from #:son-sugar #:son)
   (:shadowing-import-from :sb-ext #:with-timeout #:timeout #:timer)
   (:shadow #:exit)
 ;  (:shadow :action :item)
   (:shadowing-import-from :usocket #:socket)
 ;  (:shadowing-import-from :cl-cairo2 :scale :rotate)
-  (:import-from #:sb-thread #:semaphore #:make-semaphore #:semaphore-count
-		#:semaphore-name #:signal-semaphore #:wait-on-semaphore)
+  (:shadowing-import-from #:sb-thread #:semaphore
+                          #:wait-on-semaphore #:signal-semaphore #:semaphore-name #:semaphore-count
+                          #:make-semaphore)
   (:export
    ;; core-room.lisp
    *exits* reverse-direction direction-name myroom

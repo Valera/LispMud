@@ -4,6 +4,7 @@
 
 (defparameter *dbspec* '(:name "lispmud"))
 
+#+nil
 (defmacro with-items-collection (name &body body)
   (let ((blog-symbol (gensym)))
     `(let* ((,blog-symbol (apply 'make-instance 'mongo:database *dbspec*))

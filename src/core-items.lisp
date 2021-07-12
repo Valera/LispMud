@@ -20,6 +20,7 @@
 
 (defmethod take-item (room player (item item))
   (push item (inventory player))
+  #+nil
   (with-items-collection items
     (mongo:insert-op items (son "_id"
                             "name" (name item)

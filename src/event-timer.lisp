@@ -16,7 +16,7 @@
 (defun pick-events ()
   (with-lock-held (*event-timer-lock*)
     (if *timer-stop-flag*
-	(progn (unschedule-timer *timer*)
+	(progn (sb-ext:unschedule-timer *timer*)
 	       (setf *timer-stop-flag* nil))
 	(progn
 	  (flet ((earlier-event-p (x y) (< (getf x :time) (getf y :time))))
@@ -39,18 +39,18 @@
 
 (defun add-event (time event-fun zone repeat-interval)
   (with-lock-held (*new-scheduled-events-lock*)
-    (push (list :time (+ (get-internal-real-time) time) :function event-fun
-		:domain zone :repeat-interval (* repeat-interval 1000))
+    (push (list :time (+ (get-internal-real-time) (* time internal-time-units-per-second)) :function event-fun
+		:domain zone :repeat-interval (* repeat-interval internal-time-units-per-second))
 	  *new-scheduled-events*)))
 
 (defun start-event-loop ()
   (with-lock-held (*event-timer-lock*)
     (when *timer*
-      (unschedule-timer *timer*))
+      (sb-ext:unschedule-timer *timer*))
     (with-lock-held (*new-scheduled-events-lock*)
       (setf *scheduled-events* nil
 	    *new-scheduled-events* nil))
-    (schedule-timer (setf *timer* (make-timer (lambda () (pick-events))))
+    (sb-ext:schedule-timer (setf *timer* (sb-ext:make-timer (lambda () (pick-events))))
 		    *timer-period* :repeat-interval *timer-period*)))
 
 (defun stop-event-loop ()

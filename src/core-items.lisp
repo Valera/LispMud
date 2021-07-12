@@ -15,7 +15,7 @@
 (defgeneric take-item (room player item))
 (defmethod take-item :after (room player (item item))
   (message-to-visitors-except
-   player room (format (output p) "~&~a поднял с пола ~a и положил к себе в инвентарь.~%"
+   player room (format (output player) "~&~a поднял с пола ~a и положил к себе в инвентарь.~%"
                        (name player) (word-vp item))))
 
 (defmethod take-item (room player (item item))

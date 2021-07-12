@@ -7,9 +7,21 @@ These commands will create user "lispmud" and "lispmud" database owned by this u
 
 In REPL, load :lispmud system and create tables with
 
-  (lispmud:recreate-all-tables "lidpmud" "lispmud" "password" "localhost")
+  (lispmud:recreate-all-tables "lidpmud" "lispmud" "USEYOURPASS" "localhost")
 
 Then copy "sample-config.lisp" to "config.lisp" and edit it to add database
 connection details. After this, launch the server by
 
-  (lipsmud:main :config-file "/home/vfedotov/projects/LispMud/config.lisp")
+  (lipsmud:main :config-file "/path/to/LispMud/config.lisp")
+
+Loading
+-------
+
+Examlple of loading from SLIME environment. Replace path to Lispmud
+project and execute following
+
+  (swank:set-default-directory "/path/to/LispMud/")
+  (push #p"/path/to/LispMud/" asdf:*central-registry*)
+  (ql:quickload "lispmud")
+  (in-package :lispmud)
+  (main :config-file "config.lisp" :port 8000)

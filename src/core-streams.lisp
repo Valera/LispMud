@@ -21,8 +21,9 @@
   ((inner-stream :initarg :stream :reader inner-stream)
    (col-index :initform 0 :accessor col-index-of)
    (start-line-p :initform t :accessor start-line-p)
-   (buffer :initform (make-array 500 :element-type 'character :fill-pointer 0))))
-     
+   (buffer :initform (make-array 500 :element-type 'character :fill-pointer 0))
+   (encoding :accessor encoding :initarg :encoding)))
+
 (defmethod stream-element-type ((stream telnet-byte-output-stream))
   'character)
 
@@ -43,16 +44,16 @@
   (force-output (inner-stream stream)))
 
 (defmethod stream-write-char ((stream telnet-byte-output-stream) char)
-  (with-slots (buffer columns inner-stream start-line-p) stream
+  (with-slots (buffer columns inner-stream start-line-p encoding) stream
     (cond
       ((char= char #\Newline)
        (vector-push-extend #\Return buffer)
        (vector-push-extend #\Newline buffer)
-       (send-string buffer inner-stream)
+       (send-string buffer inner-stream encoding)
        (force-output inner-stream)
        (setf (fill-pointer buffer) 0
 	     start-line-p t))
-      ((char= char #\я)
+      ((and (eq :cp1251 encoding) (char= char #\я))
        (vector-push-extend #\я buffer)
        (vector-push-extend #\я buffer)
        (setf start-line-p nil))
@@ -60,28 +61,29 @@
        (vector-push-extend char buffer)
        (setf start-line-p nil)))))
 
-(defun send-string (buffer byte-stream &key (start 0) end)
-  (write-sequence (string-to-octets buffer :external-format :cp1251 :start start :end end)
+(defun send-string (buffer byte-stream encoding &key (start 0) end)
+  (write-sequence (sb-ext:string-to-octets buffer :external-format encoding :start start :end end)
 		  byte-stream)
   (force-output byte-stream))
 
 (defmethod stream-write-string ((stream telnet-byte-output-stream) string &optional (start 0) end)
-  (with-slots (buffer columns inner-stream start-line-p) stream
+  (with-slots (buffer columns inner-stream start-line-p encoding) stream
     (iter (for i from start below (or end (length string)))
 	  (for char = (aref string i))
 	  (when (>= (1+ (fill-pointer buffer)) (array-dimension string 0))
-	    (send-string buffer inner-stream)
+	    (send-string buffer inner-stream encoding)
 	    (setf (fill-pointer buffer) 0))
 	  (case char
 	    (#\я
 	     (vector-push-extend #\я buffer)
-	     (vector-push-extend #\я buffer))
+             (when (eq :cp1251 encoding)
+	       (vector-push-extend #\я buffer)))
 	    (#\Newline
 	     (vector-push-extend #\Return buffer)
 	     (vector-push-extend #\Newline buffer))
 	    (otherwise
 	     (vector-push-extend char buffer))))
     (when (plusp (fill-pointer buffer))
-      (send-string buffer inner-stream)
+      (send-string buffer inner-stream encoding)
       (setf (fill-pointer buffer) 0
 	    start-line-p (char= #\Newline (last-elt string))))))

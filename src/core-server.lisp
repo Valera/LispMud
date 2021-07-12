@@ -32,7 +32,7 @@
   (:documentation "Called with new new connection 'new-socket'. Creates client.")
   (:method ((server server) new-socket)
     (format t "connect: ~a ~a~%" server new-socket)
-    (setf (gethash new-socket (connections server)) (make-instance 'client :socket new-socket))))
+    (setf (gethash new-socket (connections server)) (make-instance 'client :socket new-socket :encoding :utf8))))
 
 (defgeneric handle-client-disconnect (server socket)
   (:documentation "Called on client disconnect, removes client from client hash.")
@@ -158,6 +158,7 @@
   ((socket :accessor socket :initarg :socket)
    (out-stream :accessor out-stream)
    (buffer :accessor client-buffer :initform (make-array 200 :fill-pointer 0 :element-type '(unsigned-byte 8)))
+   (encoding :accessor encoding :initarg :encoding)
    (globvars :accessor globvars)
    (player-state :accessor player-state :initform 'login)
    (input-handlers :accessor input-handlers :initform nil)
@@ -167,7 +168,8 @@
 
 (defmethod initialize-instance :after ((client client) &key &allow-other-keys)
   (setf (out-stream client)
-	(make-instance 'telnet-byte-output-stream :stream (socket-stream (socket client))))
+	(make-instance 'telnet-byte-output-stream
+                       :stream (socket-stream (socket client)) :encoding (encoding client)))
   (setf (globvars client) (list '*standard-output* (out-stream client)
 				'*player-zone* (first *zone-list*)
 				'*player-room* (first (entry-rooms (first *zone-list*)))
@@ -237,8 +239,8 @@
 
 (defmethod client-read ((client client) socket)
 ;  (format t "client-read ~s ~s~%" client socket)
-  (with-slots (buffer) client
+  (with-slots (buffer encoding) client
     (when (collect-input socket buffer)
       (prog1
-	  (octets-to-string buffer :external-format :cp1251)
+	  (sb-ext:octets-to-string buffer :external-format encoding)
 	(reset-buffer client)))))

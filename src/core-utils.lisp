@@ -56,18 +56,6 @@ forms to the hash-table."
        (for ,var = (multiple-value-bind (,y ,x) (floor ,index ,lX)
 		     (list ,y ,x (aref ,matr ,y ,x)))))))
 
-(defstruct wait-queue
-  (sb-queue (sb-queue:make-queue) :type sb-queue:queue)
-  (semaphore (sb-thread:make-semaphore) :type sb-thread:semaphore))
-
-(defun enqueue (value queue)
-  (sb-queue:enqueue value (wait-queue-sb-queue queue))
-  (sb-thread:signal-semaphore (wait-queue-semaphore queue)))
-
-(defun dequeue (queue)
-  (sb-thread:wait-on-semaphore (wait-queue-semaphore queue))
-  (sb-queue:dequeue (wait-queue-sb-queue queue)))
-
 (defmacro with-variables-from (place vars-list &body forms)
   `(let
        ,(iter (for var in vars-list)

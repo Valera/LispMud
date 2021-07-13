@@ -6,13 +6,13 @@
 (in-package :lispmud)
 
 (defclass server ()
-  ((cmdqueue-sem :initform (sb-thread:make-semaphore)) ; Семафор для работы с очередь команд.
-   (cmdqueue :initform (sb-queue:make-queue)) ; Очередь команд. Каждая команда -- функция, которая будет вызвана свободной нитью.
+  ((cmd-mailbox :initform (sb-concurrency:make-mailbox)) ; Очередь команд. Каждая команда -- функция, которая будет вызвана свободной нитью.
    (workers-mutex :accessor server-workers-mutex :initform (bt:make-lock)) ; Блокировка для списка нитей-обработчиков данных.
    (workers :accessor server-workers :initform '()) ; Список нитей-обраточкиков.
    (connections-mutex :accessor server-connections-mutex :initform (bt:make-lock)) ; Блокировка на слот connections.
    (connections :accessor connections :initform (make-hash-table)) ; Хеш-таблица, отображающая сокеты на их клиентские объекты.
-   (ctlqueue :accessor ctlqueue :initform (sb-queue:make-queue))))
+   (ctlqueue :accessor ctlqueue :initform (sb-queue:make-queue)) ; Очередь служебных сообщений на закрытие сокетов от вокер-тредов к провайдер-треду
+   ))
 
 (define-condition shutting-down () ()) ;; Not used now.
 (define-condition disconnect-client () ())
@@ -64,19 +64,16 @@
   (:method ((server server))
     (unwind-protect
 	 (handler-case
-	     (with-slots (cmdqueue-sem cmdqueue) server
-	       (iter
-		 (iter (for event = (sb-queue:dequeue cmdqueue))
-		       (while event)
-		       (for (fun . socket) = event)
-		       (handler-case ; А хорошо ли делать handler-case каждый раз?
-			   (funcall fun)
-			 (disconnect-client ()
-			   (sb-queue:enqueue (cons 'disconnect-client socket) (ctlqueue server)))))
-		 (sb-thread:wait-on-semaphore cmdqueue-sem)))
+	     (with-slots (cmd-mailbox) server
+               (iter (for event = (sb-concurrency:receive-message cmd-mailbox))
+	         (for (fun . socket) = event)
+		 (handler-case
+		     (funcall fun)
+		   (disconnect-client ()
+		     (sb-queue:enqueue (cons 'disconnect-client socket) (ctlqueue server))))))
 	   (shutting-down ()
 	     ;; anything to do here?
-	     (error "shitting-down handler-case not implemented"))
+	     (error "shutting-down handler-case not implemented"))
 	   (sb-int:closed-stream-error ()
 	     ;; FIXME: это случается когда provider-thread ещё не успела удалить
 	     ;; сокет и ему пришла новая команда на обработку. В принципе, этой ошибки быть не должно.
@@ -88,9 +85,8 @@
 (defgeneric send-to-workers (server event)
   (:documentation "Enqueues event to server queue.")
   (:method ((server server) event)
-    (with-slots (cmdqueue-sem cmdqueue) server
-      (sb-queue:enqueue event cmdqueue)
-      (sb-thread:signal-semaphore cmdqueue-sem))))
+    (with-slots (cmd-mailbox) server
+      (sb-concurrency:send-message cmd-mailbox event))))
 
 ;;(bt:interrupt-thread *listener-thread*
 ;;  #'(lambda () (signal 'shutting-down)))

@@ -26,7 +26,7 @@
    (mobs :accessor mobs :initform nil)
    (players :accessor players :initform nil)
    (items-on-floor :accessor items-on-floor :initform
-		   (list (make-instance 'coin-heap :coins (random 10)) (make-instance 'item :name "мочалка") (make-instance 'item :name "кусок мыла")))
+		   (list (make-instance 'coin-heap :coins (1+ (random  9))) (make-instance 'item :name "мочалка") (make-instance 'item :name "кусок мыла")))
    (triggers :accessor triggers :initform nil)
    (west-exit :accessor west-exit :initform nil :initarg :west-exit)
    (east-exit :accessor east-exit :initform nil :initarg :east-exit)

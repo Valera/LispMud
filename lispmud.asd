@@ -1,10 +1,4 @@
 ;;; lispmud.asd
-
-(defpackage :lispmud-system
-  (:use :cl :asdf))
-
-(in-package :lispmud-system)
-
 (defsystem :lispmud
   :serial t
   :depends-on (#:split-sequence #:alexandria #:iterate #:sb-queue #:postmodern
@@ -43,4 +37,16 @@
 				     (:file "input-handlers")
 				     (:file "command")
 				     (:file "main")
-                                     (:file "package")))))
+                                     (:file "package"))))
+  :in-order-to ((test-op (test-op "lispmud/tests"))))
+
+(defsystem "lispmud/tests"
+  :author "Valeriy Fedotov"
+  :license "LLGPL"
+  :depends-on ("lispmud"
+               "fiveam")
+  :components ((:module "tests"
+                :components
+                ((:file "core-command"))))
+  :description "Test system for lispmud"
+  :perform (test-op (op c) (symbol-call :5am :run! :lispmud)))

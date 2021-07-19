@@ -25,3 +25,14 @@ project and execute following
   (ql:quickload "lispmud")
   (in-package :lispmud)
   (main :config-file "config.lisp" :port 8000)
+
+Running tests
+-------------
+
+  (asdf:test-system :lispmud)
+
+or
+
+  (ql:quickload :lispmud/tests)
+  (5am:run! :lispmud)
+

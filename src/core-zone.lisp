@@ -1,6 +1,20 @@
 ;;; core-zone.lisp
 
-(in-package :lispmud)
+(in-package :cl-user)
+(defpackage :lispmud/core-zone
+  (:use :cl)
+  (:import-from :iter #:iter #:for #:collect #:nconcing #:with)
+  (:import-from :bt #:make-lock)
+  (:import-from :lispmud/core-utils #:pvalue)
+  (:import-from :lispmud/player #:output)
+  (:import-from :lispmud/mob #:make-mob-from-plist #:standard-mob
+                #:schedule-mob-events #:banker)
+  (:import-from :lispmud/core-room #:description #:short-description
+                #:dest-room #:east-exit #:west-exit #:north-exit #:south-exit
+                #:editor-info #:place-type #:myroom #:reverse-direction
+                #:dx-for-direction #:dy-for-direction #:*exits* #:direction
+                #:exit #:exit-slot-for-direction #:mobs #:triggers))
+(in-package :lispmud/core-zone)
 
 (defvar *zone-id-source* 0
   "Источник идентификаторов для зон. После создания каждой зоны увеличивается на 1.")
@@ -55,15 +69,17 @@
 
 (defun load-zone (filename)
   (with-open-file (stream filename)
+    ;; TODO: fix style-warning in the next line and report wrong zone format properly
     (destructuring-bind (&key zone-name zone-rooms mobs-spec
 			      ((:zone-size (size-x size-y))))
-	(let ((*package* (find-package :lispmud)))
+	(let ((*package* (find-package :lispmud)))  ;; FIXME: fragile zone loading
 	  (read stream))
       (pvalue zone-name zone-rooms (list size-x size-y) mobs-spec)
       (let ((map (make-array (list size-x size-y) :initial-element nil))
 	    (entry-rooms nil))
 	(dolist (room zone-rooms)
 	  (pvalue room)
+          ;; TODO: fix style-warning in the next line and report wrong zone format properly
 	  (destructuring-bind
 		(&key ((:coord (x y)))
 		      room-class room-short-description room-long-description room-flags room-type

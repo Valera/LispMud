@@ -4,7 +4,36 @@
 ;;; Fasilities for definition of commands are situated in core-command.lisp.
 ;;;
 
-(in-package :lispmud)
+(in-package :cl-user)
+(defpackage :lispmud/command
+  (:use :cl)
+  (:use :lispmud/core-threadvars)
+  (:use :lispmud/rucase)
+  (:import-from :iter #:iter #:for #:with #:while #:finally)
+  (:import-from :alexandria #:deletef)
+  (:import-from :lispmud/core-utils #:pvalue #:name)
+  (:import-from :lispmud/core-command #:word-dispatch #:init-command-table)
+  (:import-from :lispmud/core-server #:push-input-handler #:disconnect-client)
+  (:import-from :lispmud/bank #:deposit #:withdraw #:balance #:transfer)
+  (:import-from :lispmud/mob #:deliver-mail-for)
+  (:import-from :lispmud/shop #:price-list)
+  (:import-from :lispmud/core-items #:take-item #:text #:price #:copy-obj)
+  (:import-from :lispmud/core-fsm #:generate-fsm #:next-state #:fsm #:input #:process-input1)
+  (:import-from :lispmud/core-mail #:send-mail)
+  (:import-from :lispmud/color-codes #:*cc-red* #:*cc-green*
+                #:*cc-cyan* #:color #:*cc-reset*)
+  (:import-from :lispmud/player #:output #:inventory #:money)
+  (:import-from :lispmud/userdb #:online-user-names #:user-exists-p)
+  (:import-from :lispmud/input-handlers #:*room-changed*)
+  (:import-from :lispmud/store #:take-from-store #:put-to-store #:items-in-store)
+  (:import-from :lispmud/core-zone #:map-array)
+  (:import-from :lispmud/core-room #:description #:short-description
+                #:dest-room #:east-exit #:west-exit #:north-exit #:south-exit
+                #:editor-info #:place-type #:myroom #:reverse-direction
+                #:dx-for-direction #:dy-for-direction #:*exits* #:direction
+                #:exit #:exit-slot-for-direction #:mobs #:triggers #:players
+                #:can-pass #:process-room-triggers #:items-on-floor))
+(in-package :lispmud/command)
 
 ;; FIXME: move to other file.
 (defun player-exited (room player)
@@ -180,10 +209,10 @@
                     (first sum-string-arg))))
       (wrong-command t "ВЛОЖИТЬ" "<ЧИСЛО>")))
 
-(defun wrong-command (stream command-name command-args)
+(defun wrong-command (stream command-name &rest command-args)
   (format stream "Неправильный вызов комманды ~A. Чтобы воспользоваться коммандой,~%"
           command-name)
-  (format stream "введите~%        ~A ~A%" command-name command-args))
+  (format stream "введите~%        ~A ~{~A ~}~%" command-name command-args))
 
 (defun command-withdraw (&rest sum-string-arg)
   "Комманда СНЯТЬ: снять N монет со счёта в банке."
@@ -205,8 +234,8 @@
 (defun command-transfer (&rest person-and-sum-args)
   "Команда ПЕРЕВЕСТИ: перевести деньги на счёт другого игрока"
   (if (= 2 (length person-and-sum-args))
-      (let ((person (string-capitalize person))
-            (sum (handler-case (parse-integer sum)
+      (let ((person (string-capitalize (first person-and-sum-args)))
+            (sum (handler-case (parse-integer (second person-and-sum-args))
                    (parse-error () -1))))
         (if (plusp sum)
             (if (<= sum (balance *player*))
@@ -257,7 +286,7 @@
 (defun command-list (&rest ignored)
   "Вывести список товаров в магазине"
   (declare (ignore ignored))
-  (if (eq (class-of *player-room*) 'shop-room)
+  (if (eq (class-of *player-room*) (find-class 'shop-room))
       (progn
         (format t "    ЦЕНА  НАЗВАНИЕ~%")
         (iter (for item in (price-list *player-room*))
@@ -267,7 +296,7 @@
 
 (defun command-buy (&rest items)
   (pvalue items)
-  (if (eq (class-of *player-room*) 'shop-room)
+  (if (eq (class-of *player-room*) (find-class 'shop-room))
       (if (= (length items) 1)
 	  (let ((buy-item (find (first items) (price-list *player-room*) 
                                 :key #'name :test #'mudname-equal)))

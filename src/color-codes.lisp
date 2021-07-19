@@ -1,6 +1,9 @@
 ;;; color-codes.lisp
 
-(in-package :lispmud)
+(in-package :cl-user)
+(defpackage :lispmud/color-codes
+  (:use :cl))
+(in-package :lispmud/color-codes)
 
 ;; color codes were taken from in http://tldp.org/HOWTO/Bash-Prompt-HOWTO/x329.html
 

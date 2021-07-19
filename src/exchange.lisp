@@ -1,6 +1,11 @@
 ;;; exchange.lisp
 
-(in-package :lispmud)
+(in-package :cl-user)
+(defpackage :lispmud/exchange
+  (:use :cl)
+  (:import-from :bt #:make-lock)
+  (:import-from :lispmud/core-utils #:with-hash-table-value #:string-join))
+(in-package :lispmud/exchange)
 
 (defvar *max-exchange-items* 50
   "Максимально число лотов на бирже от одного игрока")

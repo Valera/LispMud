@@ -1,6 +1,10 @@
 ;;; player.lisp
 
-(in-package :lispmud)
+(in-package :cl-user)
+(defpackage :lispmud/player
+  (:use :cl)
+  (:import-from :lispmud/core-utils #:name))
+(in-package :lispmud/player)
 
 (defvar *player*)
 

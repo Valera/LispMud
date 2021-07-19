@@ -1,6 +1,12 @@
 ;;; registration.lisp
 
-(in-package :lispmud)
+(in-package :cl-user)
+(defpackage :lispmud/registration
+  (:use :cl)
+  (:import-from #:lispmud/core-utils #:name)
+  (:import-from #:lispmud/core-fsm #:generate-fsm #:next-state #:fsm #:input)
+  (:import-from #:lispmud/userdb #:can-login #:valid-new-player-name-p #:register-user))
+(in-package :lispmud/registration)
 
 (defparameter *first-prompt*
 "========================================================

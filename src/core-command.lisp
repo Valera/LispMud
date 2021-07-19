@@ -1,6 +1,12 @@
 ;;; command.lisp
 
-(in-package :lispmud)
+(in-package :cl-user)
+(defpackage :lispmud/core-command
+  (:use :cl)
+  (:import-from :alexandria #:hash-table-keys #:set-equal)
+  (:import-from :iter #:iter #:for #:collecting)
+  (:import-from :split-sequence #:split-sequence))
+(in-package :lispmud/core-command)
 
 (defvar *command-hash* (make-hash-table :test 'equal)
   "Хэш-таблица, ставит в соответсвие строке команды функцию для её обработки")

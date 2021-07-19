@@ -2,7 +2,12 @@
 
 ;;; 
 
-(in-package :lispmud)
+(in-package :cl-user)
+(defpackage :lispmud/event-timer
+  (:use :cl)
+  (:import-from :bt #:with-lock-held #:make-lock)
+  (:import-from :iter #:iter #:for #:while))
+(in-package :lispmud/event-timer)
 
 (defvar *timer* nil)
 (defvar *timer-period* 0.2)

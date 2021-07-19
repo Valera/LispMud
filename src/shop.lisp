@@ -1,4 +1,7 @@
-(in-package :lispmud)
+(in-package :cl-user)
+(defpackage :lispmud/shop
+  (:use :cl))
+(in-package :lispmud/shop)
 
 (defclass shop-room (service-room)
   ((price-list :initarg :price-list :initform nil

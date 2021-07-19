@@ -1,6 +1,12 @@
 ;;; store.lisp
 
-(in-package :lispmud)
+(in-package :cl-user)
+(defpackage :lispmud/store
+  (:use :cl)
+  (:import-from :bt #:make-lock #:with-recursive-lock-held)
+  (:import-from :alexandria #:deletef)
+  (:import-from :lispmud/core-utils #:name))
+(in-package :lispmud/store)
 
 (defvar *store* (make-hash-table :test 'equal))
 (defvar *store-lock* (bt:make-lock "Store"))

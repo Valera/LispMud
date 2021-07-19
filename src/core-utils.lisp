@@ -3,7 +3,15 @@
 ;; Contains handy utilites, which have no direct relation
 ;; to LispMud project.
 
-(in-package :lispmud)
+(in-package :cl-user)
+(defpackage :lispmud/core-utils
+  (:use :cl)
+  (:import-from :alexandria
+                #:hash-table-alist #:alist-hash-table #:with-unique-names)
+  (:import-from :iter
+                #:for #:in #:with
+                #:iter #:defmacro-clause #:collect))
+(in-package :lispmud/core-utils)
 
 (defun dump-hash-table (hash file-name)
   "Dump hash-table HASH to file with name FILE-NAME."

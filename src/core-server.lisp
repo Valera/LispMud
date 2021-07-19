@@ -3,7 +3,21 @@
 ;;; Realization of thread pool tcp server. Made with tutorial by M. Bazon:
 ;;; http://mihai.bazon.net/blog/howto-multi-threaded-tcp-server-in-common-lisp
 
-(in-package :lispmud)
+(in-package :cl-user)
+(defpackage :lispmud/core-server
+  (:use :cl)
+  (:use :usocket)
+  (:use :lispmud/core-globalvars)
+  (:use :lispmud/core-threadvars)
+  (:import-from :alexandria #:curry #:deletef)
+  (:import-from :iter #:iter #:for)
+  (:import-from :lispmud/core-room #:players)
+  (:import-from :lispmud/userdb #:set-user-offline)
+  (:import-from :lispmud/core-zone #:entry-rooms)
+  (:import-from :lispmud/registration #:register-and-login-fsm)
+  (:import-from :lispmud/core-streams #:telnet-byte-output-stream)
+  (:import-from :lispmud/core-utils #:with-variables-from #:pvalue))
+(in-package :lispmud/core-server)
 
 (defclass server ()
   ((cmd-mailbox :initform (sb-concurrency:make-mailbox)) ; Очередь команд. Каждая команда -- функция, которая будет вызвана свободной нитью.
@@ -25,6 +39,8 @@
   (:documentation "Called when data is available in socket"))
 (defgeneric client-disconnect (client)
   (:documentation "Called when client have disconected."))
+(defgeneric first-client-interaction (client)
+  (:documentation "Called right after connection, intended for greeting and login"))
 
 ;; Server implementation.
 
@@ -32,7 +48,9 @@
   (:documentation "Called with new new connection 'new-socket'. Creates client.")
   (:method ((server server) new-socket)
     (format t "connect: ~a ~a~%" server new-socket)
-    (setf (gethash new-socket (connections server)) (make-instance 'client :socket new-socket :encoding :utf8))))
+    (let ((new-client (make-instance 'client :socket new-socket :encoding :utf8)))
+      (first-client-interaction new-client)
+      (setf (gethash new-socket (connections server)) new-client))))
 
 (defgeneric handle-client-disconnect (server socket)
   (:documentation "Called on client disconnect, removes client from client hash.")
@@ -170,20 +188,7 @@
 				'*player-zone* (first *zone-list*)
 				'*player-room* (first (entry-rooms (first *zone-list*)))
 				'*player* nil
-				'*client* client))
-  (write-line "Добро пожаловать." (out-stream client))
-  (with-variables-from (globvars client)
-      (*standard-output* *client*)
-    (pvalue (globvars client))
-    (pvalue *standard-output* *client*)
-    (if *alpha-version-password*
-	(progn
-	  (format t "Введите пароль альфа-версии: ")
-	  (push-input-handler 'enter-alpha-password))
-	(progn
-	  (setf (register-and-login-fsm client)
-		(make-instance 'register-and-login-fsm))
-	  (push-input-handler 'registration-and-login-handler)))))
+				'*client* client)))
 
 ;; Temporary *out* string for setting it as *standard-output*
 ;(defparameter *out* (make-array 1000 :fill-pointer 0 :element-type 'character))
@@ -226,7 +231,7 @@
 ;     (format t "collect-input: read-byte ~s~%" byte)
      (when (= byte end-byte)
        (return t))
-     (when (not (and (= byte 255) (= byte prev-byte)))
+     (when (not (and (= byte 255) (= byte prev-byte))) ;; hack for cp1251 YA character
        (vector-push-extend byte buffer))
      (setf prev-byte byte)))
 
@@ -238,5 +243,6 @@
   (with-slots (buffer encoding) client
     (when (collect-input socket buffer)
       (prog1
+          ;; FIXME: разобраться с ошибками разбора кодировки
 	  (sb-ext:octets-to-string buffer :external-format encoding)
 	(reset-buffer client)))))

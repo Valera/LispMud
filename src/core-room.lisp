@@ -1,4 +1,12 @@
-(in-package :lispmud)
+(in-package :cl-user)
+(defpackage :lispmud/core-room
+  (:use :cl)
+  (:use :lispmud/core-threadvars)
+  (:import-from :iter #:iter #:for #:collect)
+  (:import-from :lispmud/color-codes #:*cc-red* #:*cc-cyan* #:*cc-reset*)
+  (:import-from :lispmud/player #:output #:money)
+  (:import-from :lispmud/core-utils #:name))
+(in-package :lispmud/core-room)
 
 (defvar *exits* '(:north :east :south :west) "All posible directions for iteration")
 
@@ -17,6 +25,8 @@
     (:south "юг")
     (:north "север")))
 
+(defvar *default-items-on-floor* nil)
+
 (defclass myroom ()
   ((short-description :accessor short-description :initform "" :initarg :short-description)
    (description :accessor description :initform "" :initarg :description)
@@ -25,8 +35,7 @@
    (flags :accessor flags :initform nil :initarg :flags)
    (mobs :accessor mobs :initform nil)
    (players :accessor players :initform nil)
-   (items-on-floor :accessor items-on-floor :initform
-		   (list (make-instance 'coin-heap :coins (1+ (random  9))) (make-instance 'item :name "мочалка") (make-instance 'item :name "кусок мыла")))
+   (items-on-floor :accessor items-on-floor :initform (copy-list *default-items-on-floor*))
    (triggers :accessor triggers :initform nil)
    (west-exit :accessor west-exit :initform nil :initarg :west-exit)
    (east-exit :accessor east-exit :initform nil :initarg :east-exit)

@@ -1,6 +1,15 @@
 ;;; items.lisp
 
-(in-package :lispmud)
+(in-package :cl-user)
+;; TODO: candidate to moving everything to items
+(defpackage :lispmud/core-items
+  (:use :cl)
+  (:import-from :alexandria #:deletef)
+  (:import-from :lispmud/core-utils #:name)
+  (:import-from :lispmud/rucase #:word-vp)
+  (:import-from :lispmud/core-room #:message-to-visitors-except #:*default-items-on-floor*)
+  (:import-from :lispmud/player #:money #:inventory #:output))
+(in-package :lispmud/core-items)
 
 (defclass item ()
   ((name :accessor name :initarg :name
@@ -64,6 +73,11 @@
     (food :name "Буханка" :nutritiousness 90)
     (food :name "Булка с маком" :nutritiousness 150)))
 
+(defparameter *default-items-on-floor*
+  (list
+   (make-instance 'coin-heap :coins (1+ (random  9)))
+   (make-instance 'item :name "мочалка")
+   (make-instance 'item :name "кусок мыла")))
 
 ;(defclass food (item)
 ;  ((

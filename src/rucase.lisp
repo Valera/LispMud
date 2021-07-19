@@ -4,7 +4,16 @@
 ;;; Система для работы с падежами в русском языке.
 ;;;
 
-(in-package :lispmud)
+(in-package :cl-user)
+(defpackage :lispmud/rucase
+  (:use :cl)
+  (:import-from :alexandria #:last-elt)
+  (:import-from :iter
+                #:iter #:for #:in #:while)
+  (:import-from :lispmud/core-utils
+                #:name #:pvalue)
+  (:export #:word-ip #:word-rp #:word-dp #:word-vp #:word-tp #:word-pp))
+(in-package :lispmud/rucase)
 
 (defvar *case-hash* (make-hash-table :test 'equal)
   "Хеш-таблица, ставящаа в соотвествие слову в именительном падеже вектор из всех шести падежей этого слова, включая сам именительный")

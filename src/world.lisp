@@ -1,6 +1,12 @@
 ;;; world.lisp
 
-(in-package :lispmud)
+(in-package :cl-user)
+(defpackage :lispmud/world
+  (:use :cl)
+  (:import-from :iter #:iter #:for #:collect)
+  (:import-from :lispmud/core-utils #:pvalue)
+  (:import-from :lispmud/core-zone #:load-zone))
+(in-package :lispmud/world)
 
 (defun load-world (world-filename)
   "Загружает описание мира из файла, чьё имя передано в аргументе. 

@@ -1,6 +1,11 @@
 ;;; bank.lisp
-    
-(in-package :lispmud)
+
+(in-package :cl-user)
+(defpackage :lispmud/bank
+  (:use :cl)
+  (:import-from :lispmud/core-utils #:name))
+(in-package :lispmud/bank)
+
 
 (defun deposit (person sum)
   "Deposit given sum of money to person's accont."

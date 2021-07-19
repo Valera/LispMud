@@ -3,7 +3,13 @@
 ;;; Contains macro for convinient definition of final state machines.
 ;;;
 
-(in-package :lispmud)
+(in-package :cl-user)
+(defpackage :lispmud/core-fsm
+  (:use :cl)
+  (:import-from :iter #:iter #:for #:until #:collecting)
+  (:import-from :lispmud/core-utils #:pvalue)
+  (:import-from :alexandria #:hash-table-plist))
+(in-package :lispmud/core-fsm)
 
 (defclass fsm ()
   ((state-list :accessor state-list)
@@ -14,7 +20,7 @@
 
 (defgeneric process-data (fsm input))
 
-;; Как быть с протечками аргументов fsm и fsm, input?
+;; TODO: Как быть с протечками аргументов fsm и fsm, input?
 ;; FIXME: проверить, существуют ли initial-state-name final-state-name
 ;; Пример использования см. ниже
 (defmacro generate-fsm (name initial-state-name final-state-name slots &body state-forms)

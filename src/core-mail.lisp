@@ -1,6 +1,10 @@
 ;;; main.lisp
 
-(in-package :lispmud)
+(in-package :cl-user)
+(defpackage :lispmud/core-mail
+  (:use :cl)
+  (:import-from :lispmud/core-utils #:name))
+(in-package :lispmud/core-mail)
 
 (defun send-mail (sender-name receiver-name message-text)
   (pomo:execute (:insert-into 'letters

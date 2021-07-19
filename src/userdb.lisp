@@ -2,7 +2,11 @@
 
 ;FIXME: написать тесты!
 
-(in-package :lispmud)
+(in-package :cl-user)
+(defpackage :lispmud/userdb
+  (:use :cl)
+  (:import-from :lispmud/core-utils #:name))
+(in-package :lispmud/userdb)
 
 (defun reset-online-users ()
   "Mark all users offile."

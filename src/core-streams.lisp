@@ -1,4 +1,10 @@
-(in-package :lispmud)
+(in-package :cl-user)
+(defpackage :lispmud/core-streams
+  (:use :cl)
+  (:use :sb-gray)
+  (:import-from :iter #:iter #:for #:with #:leave #:finally)
+  (:import-from :alexandria #:last-elt))
+(in-package :lispmud/core-streams)
 
 (defun all-positions (elem sequence &key (start 0) end)
   (iter (with positions)

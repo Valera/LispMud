@@ -1,4 +1,7 @@
-(in-package :lispmud)
+(in-package :cl-user)
+(defpackage :lispmud/tables.lisp
+  (:use cl))
+(in-package :lispmud/tables.lisp)
 
 (defun create-players ()
   (pomo:execute "create table players (

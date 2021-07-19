@@ -1,4 +1,10 @@
-(in-package :lispmud)
+(in-package :cl-user)
+(defpackage :lispmud/cases
+  (:use :cl)
+  (:import-from :lispmud/rucase #:define-case #:define-case-auto))
+(in-package :lispmud/cases)
+
+;; TODO: это не должно быть лисповым кодом, это данные!
 
 (define-case "мочалка" "молчалки" "мочалке" "мочалку" "мочалкой" "мочалке")
 (define-case "Панда" "Панды" "Панде" "Панду" "Пандой" "Панде")

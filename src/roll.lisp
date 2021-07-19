@@ -1,6 +1,9 @@
 ;;; roll.lisp
 
-(in-package :lispmud)
+(in-package :cl-user)
+(defpackage :lispmud/roll
+  (:use :cl))
+(in-package :lispmud/roll)
 
 (defun roll-once (maxval)
   "Return ranom value from 1 to maxval inclusively"

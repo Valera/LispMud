@@ -1,6 +1,24 @@
 ;;; mob.lisp
 
-(in-package :lispmud)
+(in-package :cl-user)
+(defpackage :lispmud/mob
+  (:use :cl)
+  (:use :iter)
+  (:use :lispmud/rucase)
+  (:import-from :alexandria #:deletef #:emptyp)
+  (:import-from :lispmud/core-utils #:name)
+  (:import-from :lispmud/event-timer #:add-event)
+  (:import-from :lispmud/player #:output #:inventory)
+  (:import-from :lispmud/core-threadvars #:*player*)
+  (:import-from :lispmud/core-mail #:recv-mail #:have-mail-for)
+  (:import-from :lispmud/core-room #:description #:short-description
+                #:dest-room #:east-exit #:west-exit #:north-exit #:south-exit
+                #:editor-info #:place-type #:myroom #:reverse-direction
+                #:dx-for-direction #:dy-for-direction #:*exits* #:direction
+                #:exit #:exit-slot-for-direction #:mobs #:triggers #:can-pass
+                #:mobless-p #:message-to-visitors #:message-to-visitors-except
+                #:direction-name))
+(in-package :lispmud/mob)
 
 (defclass mob ()
   ((name :accessor name :initarg :name)

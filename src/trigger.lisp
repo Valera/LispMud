@@ -1,6 +1,10 @@
 ;;; trigger.lisp
 
-(in-package :lispmud)
+(in-package :cl-user)
+(defpackage :lispmud/trigger
+  (:use :cl)
+  (:import-from :lispmud/player #:output))
+(in-package :lispmud/trigger)
 
 #+(or)
 (defvar *registered-triggers* nil

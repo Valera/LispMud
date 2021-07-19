@@ -1,13 +1,24 @@
 ;;; main.lisp
 
-(in-package :lispmud)
+(in-package :cl-user)
+(defpackage :lispmud/main
+  (:use :cl)
+  (:use :lispmud/core-threadvars)
+  (:use :lispmud/core-globalvars)
+  (:import-from :alexandria #:with-input-from-file)
+  (:import-from :lispmud/core-utils #:pvalue)
+  (:import-from :lispmud/userdb #:reset-online-users)
+  (:import-from :lispmud/command #:init-commands)
+  (:import-from :lispmud/world #:load-world)
+  (:import-from :lispmud/event-timer #:start-event-loop #:stop-event-loop)
+  (:import-from :lispmud/core-zone #:temp-start-work)
+  (:import-from :lispmud/core-server #:run-lispmud))
+(in-package :lispmud/main)
 
 (defvar *host*)
 (defvar *port*)
 (defvar *world-filename*)
 (defvar *savedir*)
-(defvar *alpha-version-password*)
-(defvar *db-connection-spec*)
 
 (defun load-config (file-name &key port-arg)
   (with-input-from-file (stream file-name)

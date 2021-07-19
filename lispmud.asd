@@ -12,9 +12,7 @@
                                 #:metabang-bind #:fiveam)
   :components ((:module "src"
 			:serial t
-			:components ((:file "packages" )
-				     ;; core
-				     (:file "core-globalvars")
+			:components ((:file "core-globalvars")
 				     (:file "core-utils")
                                      (:file "core-db")
 				     (:file "core-mail")
@@ -31,11 +29,11 @@
 				     (:file "store")
 				     (:file "userdb")
 				     (:file "bank")
-				     (:file "shop")
 				     (:file "exchange")
 				     (:file "roll")
 				     (:file "registration")
 				     (:file "core-room")
+				     (:file "shop")
 				     (:file "core-items")
 				     (:file "mob")
 				     (:file "core-zone")
@@ -44,4 +42,5 @@
 				     (:file "core-server")
 				     (:file "input-handlers")
 				     (:file "command")
-				     (:file "main")))))
+				     (:file "main")
+                                     (:file "package")))))

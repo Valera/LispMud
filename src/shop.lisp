@@ -1,11 +1,14 @@
 (in-package :cl-user)
 (defpackage :lispmud/shop
-  (:use :cl))
+  (:use :cl)
+  (:import-from :lispmud/core-room #:service-room))
 (in-package :lispmud/shop)
 
 (defclass shop-room (service-room)
   ((price-list :initarg :price-list :initform nil
                :accessor price-list)))
+
+(defclass service-mob () ())
 
 (defclass seller (service-mob)
   ((buy-phrase :initarg :buy-phrase :initform ""

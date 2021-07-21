@@ -5,7 +5,7 @@
   (:use :cl)
   (:import-from :iter #:iter #:for #:collect #:nconcing #:with)
   (:import-from :bt #:make-lock)
-  (:import-from :lispmud/core-utils #:pvalue)
+  (:import-from :lispmud/core-utils #:pvalue #:name)
   (:import-from :lispmud/player #:output)
   (:import-from :lispmud/mob #:make-mob-from-plist #:standard-mob
                 #:schedule-mob-events #:banker)

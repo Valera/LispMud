@@ -47,6 +47,7 @@
                "fiveam")
   :components ((:module "tests"
                 :components
-                ((:file "core-command"))))
+                ((:file "core-command")
+                 (:file "userdb"))))
   :description "Test system for lispmud"
   :perform (test-op (op c) (symbol-call :5am :run! :lispmud)))

@@ -5,7 +5,7 @@
 (in-package :cl-user)
 (defpackage :lispmud/userdb
   (:use :cl)
-  (:import-from :alexandria #:hash-table-keys)
+  (:import-from :alexandria #:hash-table-keys #:hash-table-values)
   (:import-from :sb-ext #:with-locked-hash-table)
   (:import-from :lispmud/core-utils #:name))
 (in-package :lispmud/userdb)
@@ -23,6 +23,11 @@
   "List of names of all online players."
   (sb-ext:with-locked-hash-table (*online-players*)
     (hash-table-keys *online-players*)))
+
+(defun online-players ()
+  "List of online player objects."
+  (sb-ext:with-locked-hash-table (*online-players*)
+    (hash-table-values *online-players*)))
 
 (defun try-set-user-online (player)
   "Mark user as being online."

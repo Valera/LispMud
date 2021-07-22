@@ -23,7 +23,7 @@
   (:import-from :lispmud/color-codes #:*cc-red* #:*cc-green*
                 #:*cc-cyan* #:color #:*cc-reset*)
   (:import-from :lispmud/player #:output #:inventory #:money)
-  (:import-from :lispmud/userdb #:online-user-names #:user-exists-p)
+  (:import-from :lispmud/userdb #:online-players #:user-exists-p)
   (:import-from :lispmud/input-handlers #:*room-changed*)
   (:import-from :lispmud/store #:take-from-store #:put-to-store #:items-in-store)
   (:import-from :lispmud/core-zone #:map-array)
@@ -164,9 +164,9 @@
 
 (defun command-chat (&rest words)
   "БОЛТАТЬ: ваши слова услышат все игроки в игре"
-  (iter (for p in (online-user-names))
+  (iter (for p in (online-players))
 	(color *cc-green* (output p))
-	(format (output p) "~a: \"~{~a~^ ~}\"~%~%" (name *player*) words)
+	(format (output p) "~a болтает: ~{~a~^ ~}~%~%" (name *player*) words)
 	(color *cc-reset* (output p))))
 
 ;; FIXME: блокировка!

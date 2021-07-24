@@ -35,6 +35,7 @@
 ;				     (:file "core-telnet")
 				     (:file "core-server")
 				     (:file "input-handlers")
+				     (:file "text-editor")
 				     (:file "command")
 				     (:file "main")
                                      (:file "package"))))
@@ -49,6 +50,7 @@
                 :components
                 ((:file "core-command")
                  (:file "userdb")
+                 (:file "text-editor")
                  (:file "command"))))
   :description "Test system for lispmud"
   :perform (test-op (op c) (symbol-call :5am :run! :lispmud)))

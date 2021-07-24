@@ -48,7 +48,12 @@
   (:documentation "Called with new new connection 'new-socket'. Creates client.")
   (:method ((server server) new-socket)
     (format t "connect: ~a ~a~%" server new-socket)
-    (let ((new-client (make-instance 'client :socket new-socket :encoding :utf8)))
+    (let* ((encoding :utf8)            ; TODO: add support for changing encoding
+           (client-out-stream
+             (make-instance 'telnet-byte-output-stream
+                            :stream (socket-stream new-socket) :encoding encoding))
+           (new-client (make-instance 'client :socket new-socket :encoding encoding
+                                              :out-stream client-out-stream)))
       (first-client-interaction new-client)
       (setf (gethash new-socket (connections server)) new-client))))
 
@@ -170,9 +175,9 @@
 ;; Client class.
 (defclass client ()
   ((socket :accessor socket :initarg :socket)
-   (out-stream :accessor out-stream)
+   (out-stream :accessor out-stream :initarg :out-stream)
    (buffer :accessor client-buffer :initform (make-array 200 :fill-pointer 0 :element-type '(unsigned-byte 8)))
-   (encoding :accessor encoding :initarg :encoding)
+   (encoding :accessor encoding :initarg :encoding)  ; used for decoding input
    (globvars :accessor globvars)
    (player-state :accessor player-state :initform 'login)
    (input-handlers :accessor input-handlers :initform nil)
@@ -181,9 +186,6 @@
 (defvar *client*)
 
 (defmethod initialize-instance :after ((client client) &key &allow-other-keys)
-  (setf (out-stream client)
-	(make-instance 'telnet-byte-output-stream
-                       :stream (socket-stream (socket client)) :encoding (encoding client)))
   (setf (globvars client) (list '*standard-output* (out-stream client)
 				'*player-zone* (first *zone-list*)
 				'*player-room* (first (entry-rooms (first *zone-list*)))

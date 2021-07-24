@@ -26,6 +26,7 @@
   (:import-from :lispmud/userdb #:online-players #:user-exists-p)
   (:import-from :lispmud/input-handlers #:*room-changed*)
   (:import-from :lispmud/store #:take-from-store #:put-to-store #:items-in-store)
+  (:import-from :lispmud/text-editor #:text-editor-fsm)
   (:import-from :lispmud/core-zone #:map-array)
   (:import-from :lispmud/core-room #:description #:short-description
                 #:dest-room #:east-exit #:west-exit #:north-exit #:south-exit
@@ -263,7 +264,9 @@
 		       (let ((mail-editor
 			      (make-instance 'text-editor-fsm
 					     :after-editing-cb
-					     (lambda (text) (send-mail (name *player*) receiver-name text)))))
+					     (lambda (text)
+                                               (send-mail (name *player*) receiver-name text)
+                                               (pop-input-handler)))))
 			 (push-input-handler
 			  (lambda (client input) (declare (ignore client)) (process-input1 mail-editor input))))
 		       (format t "Игрока с именем \"~a\" не существует.~%" receiver-name)))))

@@ -5,7 +5,7 @@
   (:import-from :iter #:iter #:for #:collect)
   (:import-from :lispmud/color-codes #:*cc-red* #:*cc-cyan* #:*cc-reset*)
   (:import-from :lispmud/player #:output #:money)
-  (:import-from :lispmud/core-utils #:name))
+  (:import-from :lispmud/core-utils #:name #:copy-instance))
 (in-package :lispmud/core-room)
 
 (defvar *exits* '(:north :east :south :west) "All posible directions for iteration")
@@ -35,7 +35,7 @@
    (flags :accessor flags :initform nil :initarg :flags)
    (mobs :accessor mobs :initform nil)
    (players :accessor players :initform nil)
-   (items-on-floor :accessor items-on-floor :initform (copy-list *default-items-on-floor*))
+   (items-on-floor :accessor items-on-floor :initform (mapcar #'copy-instance *default-items-on-floor*))
    (triggers :accessor triggers :initform nil)
    (west-exit :accessor west-exit :initform nil :initarg :west-exit)
    (east-exit :accessor east-exit :initform nil :initarg :east-exit)

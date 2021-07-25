@@ -24,7 +24,7 @@
                 #:*cc-cyan* #:color #:*cc-reset*)
   (:import-from :lispmud/player #:output #:inventory #:money)
   (:import-from :lispmud/userdb #:online-players #:user-exists-p)
-  (:import-from :lispmud/input-handlers #:*room-changed*)
+  (:import-from :lispmud/input-handlers #:*room-changed* #:pop-input-handler)
   (:import-from :lispmud/store #:take-from-store #:put-to-store #:items-in-store)
   (:import-from :lispmud/text-editor #:text-editor-fsm)
   (:import-from :lispmud/core-zone #:map-array)

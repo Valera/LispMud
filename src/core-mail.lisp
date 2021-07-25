@@ -24,3 +24,8 @@
 	       'receiver-name
 	       :from 'letters
 	       :where (:= 'receiver-name (name receiver-hero)))))
+
+;; FIXME: no function to clear all mail
+;; FIXME: no function to clear mail after receiving it
+;; FIXME: can not write multiple mails for same (sender, receiver) pair
+

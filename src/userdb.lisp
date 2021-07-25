@@ -68,7 +68,9 @@
   "Add user with given user-name and password to list of registered users.
 If user with such name already exists, then do nothing and return nil."
   (pomo:with-transaction ()
-    (if (not (user-exists-p user-name))
-	(pomo:execute
+    (handler-case
+        (pomo:execute
 	 (:insert-into 'players
-		       :set 'name user-name 'password password 'online-p nil)))))
+	  :set 'name user-name 'password password 'online-p nil))
+      (cl-postgres-error:unique-violation ()
+        nil))))

@@ -1,11 +1,14 @@
 (in-package :cl-user)
 (defpackage :lispmud/tests/userdb
   (:use :cl)
+  (:use :lispmud/core-globalvars)
   (:import-from :alexandria #:set-equal)
   (:import-from :lispmud/player #:player)
+  (:import-from :lispmud/tables #:recreate-all-tables)
   (:import-from :lispmud/userdb
                 #:reset-online-users #:online-user-names #:try-set-user-online
-                #:set-user-offline #:*online-players* #:online-players))
+                #:set-user-offline #:*online-players* #:online-players
+                #:register-user #:user-exists-p))
 (in-package :lispmud/tests/userdb)
 
 (5am:def-suite userdb
@@ -39,3 +42,11 @@
     (reset-online-users)
     (5am:is (equal nil (online-user-names)))
     (5am:is (equal nil (online-players)))))
+
+(5am:test registration
+  (let* ((*db-connection-spec* (list "lispmudtest" "lispmudtest" "lispmudtest" "localhost")))
+    (apply #'recreate-all-tables *db-connection-spec*)
+    (pomo:with-connection (append *db-connection-spec* '(:pooled-p t))
+      (5am:is (register-user "Агроном" "password"))
+      (5am:is (user-exists-p "Агроном"))
+      (5am:is (not (register-user "Агроном" "password"))))))

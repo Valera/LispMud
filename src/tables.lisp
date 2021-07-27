@@ -7,7 +7,6 @@
   (pomo:execute "create table players (
                      name text not null,
                      password text not null,
-                     online_p boolean not null,
                      money_in_bank integer not null default 0,
                      primary key (name) );"))
 

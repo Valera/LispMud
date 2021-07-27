@@ -8,7 +8,7 @@
   (:import-from :lispmud/userdb
                 #:reset-online-users #:online-user-names #:try-set-user-online
                 #:set-user-offline #:*online-players* #:online-players
-                #:register-user #:user-exists-p))
+                #:register-user #:user-exists-p #:users-db))
 (in-package :lispmud/tests/userdb)
 
 (5am:def-suite userdb
@@ -49,4 +49,5 @@
     (pomo:with-connection (append *db-connection-spec* '(:pooled-p t))
       (5am:is (register-user "Агроном" "password"))
       (5am:is (user-exists-p "Агроном"))
-      (5am:is (not (register-user "Агроном" "password"))))))
+      (5am:is (not (register-user "Агроном" "password")))
+      (5am:is (equal '(("Агроном" "password")) (users-db))))))

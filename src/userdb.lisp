@@ -45,7 +45,7 @@
 (defun users-db ()
   "List of all users database records."
   (pomo:with-transaction ()
-    (pomo:query (:select 'name 'password 'online-p :from 'players))))
+    (pomo:query (:select 'name 'password :from 'players))))
 
 (defun valid-new-player-name-p (namestring)
   "Return T if new player name is valid player name, every letter is Russian."
@@ -71,6 +71,6 @@ If user with such name already exists, then do nothing and return nil."
     (handler-case
         (pomo:execute
 	 (:insert-into 'players
-	  :set 'name user-name 'password password 'online-p nil))
+	  :set 'name user-name 'password password))
       (cl-postgres-error:unique-violation ()
         nil))))

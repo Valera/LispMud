@@ -179,7 +179,7 @@
    (buffer :accessor client-buffer :initform (make-array 200 :fill-pointer 0 :element-type '(unsigned-byte 8)))
    (encoding :accessor encoding :initarg :encoding)  ; used for decoding input
    (globvars :accessor globvars)
-   (player-state :accessor player-state :initform 'login)
+   (player-state :accessor player-state :initform :login)
    (input-handlers :accessor input-handlers :initform nil)
    (register-and-login-fsm :accessor register-and-login-fsm)))
 
@@ -216,7 +216,7 @@
 (defmethod client-disconnect ((client client))
   (with-variables-from (globvars client)
       (*player-zone* *player-room* *player*)
-    (when (eql (player-state client) 'game)
+    (when (eql (player-state client) :game)
       (deletef (players *player-room*) *player*)
       (set-user-offline *player*))))
 

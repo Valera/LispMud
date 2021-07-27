@@ -20,7 +20,7 @@
 (defun enter-alpha-password (client input)
   (if (string= *alpha-version-password* (string-trim '(#\Space #\Newline #\Return) input))
       (progn
-	(setf (player-state client) 'login)
+	(setf (player-state client) :login)
 	(format t "Пароль принят.~%")
 	(setf  (register-and-login-fsm client) (make-instance 'register-and-login-fsm))
 	(push-input-handler 'registration-and-login-handler))
@@ -36,6 +36,7 @@
       (if (try-set-user-online *player*)
 	  (progn
 	    (push *player* (players *player-room*))
+            (setf (player-state client) :game)
 	    (if (have-mail-for *player*)
 		(format t "У вас есть ~a непрочитанных письма.~%" (length (have-mail-for *player*))))
 	    (room-about *player-room*)

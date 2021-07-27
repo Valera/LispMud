@@ -3,7 +3,8 @@
 (in-package :cl-user)
 (defpackage :lispmud/core-zone
   (:use :cl)
-  (:import-from :iter #:iter #:for #:collect #:nconcing #:with)
+  (:import-from :iter #:iter #:for #:collect #:nconcing #:with #:repeat)
+  (:import-from :alexandria #:remove-from-plistf #:random-elt)
   (:import-from :bt #:make-lock)
   (:import-from :lispmud/core-utils #:pvalue #:name)
   (:import-from :lispmud/player #:output)
@@ -142,26 +143,31 @@
   (let ((mobs-type-count (length (mobs-spec zone))))
     (setf (mobs-counters zone) (make-array mobs-type-count :initial-element 0))
     (setf (mobs-max-numbers zone) (make-array mobs-type-count))
-    (iter (for mob-spec in (mobs-spec zone))
-	  (for x = 1)
-	  (for y = 1)
-	  (for class = (let ((type (getf mob-spec :type)))
-			 (case type 
-			   (:regular 'standard-mob)
-			   (:banker 'banker))))
-	  (remf mob-spec :type)
-	  (for i upfrom 0)
-	  (for mob =  (make-mob-from-plist class
-					   (concatenate 'list mob-spec
-							(list :zone zone :mob-room (aref (map-array zone) x y)))))
-	  (push mob (mobs (aref (map-array zone) x y)))
-	  (schedule-mob-events mob (aref (map-array zone) x y) zone)
-	  (incf (aref (mobs-counters zone) i))
-#+nil	  (setf (aref (mobs-max-numbers zone) i) max-number))))
+    (iter
+      (for mob-spec in (mobs-spec zone))
+      (for spawn-coords = (getf mob-spec :spawn-coords))
+      (for spawn-limit = (getf mob-spec :spawn-limit 1))
+      (for class = (case (getf mob-spec :type)
+		     (:regular 'standard-mob)
+		     (:banker 'banker)))
+      (remove-from-plistf mob-spec :spawn-coords :spawn-limit :type)
+      (for mob-index upfrom 0)
+      (iter
+        (repeat spawn-limit)
+        (for (x y) = (random-elt spawn-coords))
+	(for mob =  (make-mob-from-plist
+                     class
+		     (concatenate 'list mob-spec
+				  (list :zone zone :mob-room (aref (map-array zone) x y)))))
+	(push mob (mobs (aref (map-array zone) y x)))
+	(schedule-mob-events mob (aref (map-array zone) y x) zone))
+      (setf (aref (mobs-counters zone) mob-index) spawn-limit)
+      (setf (aref (mobs-max-numbers zone) mob-index) spawn-limit))))
 
 ;; Временная функция для отладки. Добавляет в комнату с координатами (1, 1) собаку.
 ;; TODO:typo
 (defmethod temp-start-work ((zone zone))
+  ;; TODO: переместить этот триггер в данные банка или моба в файле зоны
   (push (list :bank-deposit-trigger nil
 	      #'(lambda (room player sum)
 		  (declare (ignore room))

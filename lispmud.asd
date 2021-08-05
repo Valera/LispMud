@@ -45,12 +45,14 @@
   :author "Valeriy Fedotov"
   :license "LLGPL"
   :depends-on ("lispmud"
-               "fiveam")
+               "fiveam"
+               "mockingbird")
   :components ((:module "tests"
                 :components
                 ((:file "core-command")
                  (:file "userdb")
                  (:file "text-editor")
-                 (:file "command"))))
+                 (:file "command")
+                 (:file "event-timer"))))
   :description "Test system for lispmud"
   :perform (test-op (op c) (symbol-call :5am :run! :lispmud)))

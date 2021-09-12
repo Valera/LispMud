@@ -4,6 +4,8 @@
   :depends-on (#:split-sequence #:alexandria #:iterate #:sb-queue #:postmodern
                                 #:bordeaux-threads #:usocket #:cl-store
                                 #:metabang-bind #:fiveam)
+  :around-compile (lambda (next)
+                    (with-compilation-unit (:policy '(optimize (debug 3) (safety 3) (speed 0))) (funcall next)))
   :components ((:module "src"
 			:serial t
 			:components ((:file "core-globalvars")

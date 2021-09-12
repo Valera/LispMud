@@ -70,12 +70,12 @@ you should set repeat-interval to be 4-5 times more than *timer-period*."
 repeat-interval argument should be 4-5 times more than *timer-period* for more accurate scheduling.
 If repeat-interval is less than *timer-perioud* event will be still executed only once per timer activation."
   (with-lock-held (*new-scheduled-events-lock*)
-    (push (make-mud-event :time (+ (get-internal-real-time) (* time internal-time-units-per-second))
-                          :function event-fun
-		          :domain zone
-                          :repeat-interval (when repeat-interval
-                                             (* repeat-interval internal-time-units-per-second)))
-	  *new-scheduled-events*)))
+    (flet ((to-internal-units (seconds) (round (* seconds internal-time-units-per-second))))
+      (push (make-mud-event :time (+ (get-internal-real-time) (to-internal-units time))
+                            :function event-fun
+                            :domain zone
+                            :repeat-interval (when repeat-interval (to-internal-units repeat-interval)))
+            *new-scheduled-events*))))
 
 (defun start-event-loop ()
   "Starts event loop, calling function pick-events wiht *timer-period* period.

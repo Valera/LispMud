@@ -24,17 +24,17 @@ env:
   jobs:
     # The implementation and whether coverage is send to coveralls are controlled with these environmental variables
     - LISP=sbcl-bin COVERALLS=true
-    - LISP=ccl-bin
-    - LISP=abcl
-    - LISP=ecl   # warn: in our experience, compilations times can be long on ECL.
+    #- LISP=ccl-bin
+    #- LISP=abcl
+    #- LISP=ecl   # warn: in our experience, compilations times can be long on ECL.
 
 # Additional OS/Lisp combinations can be added to those generated above
-jobs:
-  include:
-    - os: osx
-      env: LISP=sbcl-bin
-    - os: osx
-      env: LISP=ccl-bin
+#jobs:
+#  include:
+#    - os: osx
+#      env: LISP=sbcl-bin
+#    - os: osx
+#      env: LISP=ccl-bin
 
 # Note that this should only be used if there is no interest for the library to work on that system
 #  allow_failures:
@@ -62,6 +62,7 @@ install:
   #- if [ "$LISP" == "ccl-bin" ]; then git clone https://gitlab.common-lisp.net/asdf/asdf.git ~/common-lisp; fi
 
 script:
+  - rm mudsketcher.asd
   - run-fiveam -e t -l lispmud/test :lispmud
   #- run-prove foo.asd
   #- rove foo.asd

@@ -39,6 +39,7 @@
 (defun make-mocked-zone ()
   (list (make-instance 'zone :name "Mocked zone" :entry-rooms (list :mocked-room))))
 
+#+(or)
 (5am:test command-mail
   (let* ((*online-players* (make-hash-table :test 'equal :synchronized t))
          (player-frodo (make-instance 'player :name "Фродо" :output (make-string-output-stream)))

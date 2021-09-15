@@ -43,6 +43,7 @@
     (5am:is (equal nil (online-user-names)))
     (5am:is (equal nil (online-players)))))
 
+#+(or)
 (5am:test registration
   (let* ((*db-connection-spec* (list "lispmudtest" "lispmudtest" "lispmudtest" "localhost")))
     (apply #'recreate-all-tables *db-connection-spec*)

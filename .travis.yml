@@ -1,15 +1,15 @@
 ### Example configuration for Travis CI ###
 language: generic
 
-addons:
-  homebrew:
-    update: true
-    packages:
-    - roswell
-  apt:
-    packages:
-      - libc6-i386 # needed for a couple implementations
-      - default-jre # needed for abcl
+#addons:
+#  homebrew:
+#    update: true
+#    packages:
+#    - roswell
+#  apt:
+#    packages:
+#      - libc6-i386 # needed for a couple implementations
+#      - default-jre # needed for abcl
 
 # Runs each lisp implementation on each of the listed OS
 os:
@@ -20,7 +20,7 @@ env:
   global:
     - PATH=~/.roswell/bin:$PATH
     - ROSWELL_INSTALL_DIR=$HOME/.roswell
-#    - COVERAGE_EXCLUDE=t  # for prove or rove
+    - COVERAGE_EXCLUDE=tests  # for prove or rove
   jobs:
     # The implementation and whether coverage is send to coveralls are controlled with these environmental variables
     - LISP=sbcl-bin COVERALLS=true
@@ -62,7 +62,7 @@ install:
   #- if [ "$LISP" == "ccl-bin" ]; then git clone https://gitlab.common-lisp.net/asdf/asdf.git ~/common-lisp; fi
 
 script:
-  - rm mudsketcher.asd
+  - rm mudsketcher.asd  # Remove musketcher system because run-fiveam tries to atoload all systems
   - run-fiveam -e t -l lispmud/tests :lispmud
   #- run-prove foo.asd
   #- rove foo.asd

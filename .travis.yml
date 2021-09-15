@@ -63,6 +63,6 @@ install:
 
 script:
   - rm mudsketcher.asd
-  - run-fiveam -e t -l lispmud/test :lispmud
+  - run-fiveam -e t -l lispmud/tests :lispmud
   #- run-prove foo.asd
   #- rove foo.asd

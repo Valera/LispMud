@@ -59,9 +59,9 @@ before_script:
   - cp sample-config.lisp test-config.lisp
   - sed -i 's/:db-name ""/:db-name "travis_ci_test"/' test-config.lisp
   - sed -i 's/:db-user ""/:db-user "postgres"/' test-config.lisp
-  - EXPORT LISPMUD_DB=travis_ci_test
-  - EXPORT LISPMUD_DB_USER=postgres
-  - EXPORT LISPMUD_DB_PASSWORD=''
+  - export LISPMUD_DB=travis_ci_test
+  - export LISPMUD_DB_USER=postgres
+  - export LISPMUD_DB_PASSWORD=''
 
 install:
   - curl -L https://raw.githubusercontent.com/roswell/roswell/release/scripts/install-for-ci.sh | sh

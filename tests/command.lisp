@@ -45,7 +45,7 @@
    (or (uiop:getenv "LISPMUD_TEST_DB") "lispmudtest")
    (or (uiop:getenv "LISPMUD_TEST_DB_USER") "lispmudtest")
    (or (uiop:getenv "LISPMUD_TEST_DB_PASSWORD") "lispmudtest")
-   (or (uiop:getenv "LISPMUD_TEST_DB_HOST") "localhost"))
+   (or (uiop:getenv "LISPMUD_TEST_DB_HOST") "localhost")))
 
 (5am:test command-mail
   (let* ((*online-players* (make-hash-table :test 'equal :synchronized t))

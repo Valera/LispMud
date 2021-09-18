@@ -51,6 +51,18 @@ cache:
     - $HOME/.roswell
     - $HOME/.config/common-lisp
 
+services:
+  - postgresql
+
+before_script:
+  - psql -c 'create database travis_ci_test;' -U postgres
+  - cp sample-config.lisp test-config.lisp
+  - sed -i 's/:db-name ""/:db-name "travis_ci_test"/' test-config.lisp
+  - sed -i 's/:db-user ""/:db-user "postgres"/' test-config.lisp
+  - EXPORT LISPMUD_DB=travis_ci_test
+  - EXPORT LISPMUD_DB_USER=postgres
+  - EXPORT LISPMUD_DB_PASSWORD=''
+
 install:
   - curl -L https://raw.githubusercontent.com/roswell/roswell/release/scripts/install-for-ci.sh | sh
   - ros install ci-utils #for run-fiveam

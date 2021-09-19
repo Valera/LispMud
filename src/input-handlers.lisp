@@ -32,7 +32,8 @@
     (process-input1 fsm (string-trim '(#\Space #\Newline #\Return) input))
 ;   (format t "#2 ~a ~a ~%" (current-state fsm) 'finish-login)
     (when (eql (current-state fsm) 'finish-login)
-      (setf *player* (make-instance 'player :name (name fsm) :output   *standard-output*))
+      (setf *player* (make-instance 'player :name (name fsm) :output   *standard-output*)
+            *player-zone* (first *zone-list*))
       (if (try-set-user-online *player*)
 	  (progn
 	    (push *player* (players *player-room*))
@@ -44,7 +45,7 @@
 	    (push-input-handler 'terminal-input-handler))
 	  (progn
 	    (process-input1 fsm "облом")
-	    (setf *player* nil)))))
+	    (setf *player* nil *player-zone* :no-zone)))))
        ;; FIXME: Выход без регистрации.
 #+nil	 (error (condition) (format t "Command erred with condition ~a~%" condition)))
 

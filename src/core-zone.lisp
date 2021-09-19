@@ -22,6 +22,7 @@
 
 (defclass zone ()
   ((name :accessor name :initarg :name)
+   (symbol :accessor zone-symbol :initarg :zone-symbol)
    (id :reader id)
    (map-array :accessor map-array :initarg :map-array)
    (entry-rooms :accessor entry-rooms :initarg :entry-rooms)
@@ -41,7 +42,7 @@
   (with-open-file (stream filename :direction :output :if-exists :supersede)
     (let ((map-array (map-array zone)))
       (pprint
-       (list :zone-name (name zone)    :mobs-spec (mobs-spec zone)
+       (list :zone-symbol (zone-symbol zone) :zone-name (name zone) :mobs-spec (mobs-spec zone)
 	     :zone-size (array-dimensions map-array)
 	     :zone-rooms
 	     (iter (for y from 0 below (array-dimension map-array 0))
@@ -71,7 +72,7 @@
 (defun load-zone (filename)
   (with-open-file (stream filename)
     ;; TODO: fix style-warning in the next line and report wrong zone format properly
-    (destructuring-bind (&key zone-name zone-rooms mobs-spec
+    (destructuring-bind (&key zone-symbol zone-name zone-rooms mobs-spec
 			      ((:zone-size (size-x size-y))))
 	(let ((*package* (find-package :lispmud)))  ;; FIXME: fragile zone loading
 	  (read stream))
@@ -95,7 +96,7 @@
 				 :north-exit north-exit :south-exit south-exit))
 	    (push (aref map y x) entry-rooms)))
 	(link-rooms map)
-	(make-instance 'zone :name zone-name :map-array map
+	(make-instance 'zone :name zone-name :zone-symbol zone-symbol :map-array map
 		       :mobs-spec mobs-spec :entry-rooms entry-rooms)))))
 
 (defun link-rooms (zone-map)
@@ -155,6 +156,7 @@
       (iter
         (repeat spawn-limit)
         (for (x y) = (random-elt spawn-coords))
+        (assert (aref (map-array zone) y x))  ; TODO: check this when loading zone
 	(for mob =  (make-mob-from-plist
                      class
 		     (concatenate 'list mob-spec

@@ -10,19 +10,20 @@
   (:use :lispmud/core-globalvars)
   (:use :lispmud/core-threadvars)
   (:import-from :alexandria #:curry #:deletef)
-  (:import-from :iter #:iter #:for)
+  (:import-from :iter #:iter #:for #:with #:finish)
   (:import-from :lispmud/core-room #:players)
   (:import-from :lispmud/userdb #:set-user-offline)
-  (:import-from :lispmud/core-zone #:entry-rooms)
+  (:import-from :lispmud/core-zone #:entry-rooms #:zone-symbol)
   (:import-from :lispmud/registration #:register-and-login-fsm)
   (:import-from :lispmud/core-streams #:telnet-byte-output-stream)
   (:import-from :lispmud/core-utils #:with-variables-from #:pvalue))
 (in-package :lispmud/core-server)
 
 (defclass server ()
-  ((cmd-mailbox :initform (sb-concurrency:make-mailbox)) ; Очередь команд. Каждая команда -- функция, которая будет вызвана свободной нитью.
+  ((mailbox-hash :initform (make-hash-table :test 'eql)) ; Отображение символа зоны на очередь команд. Каждая команда -- функция, которая будет вызвана свободной нитью.
+   (workers-hash :initform (make-hash-table :test 'eql)) ; Отображение символа зоны на поток-обработчик очереди команд.
    (workers-mutex :accessor server-workers-mutex :initform (bt:make-lock)) ; Блокировка для списка нитей-обработчиков данных.
-   (workers :accessor server-workers :initform '()) ; Список нитей-обраточкиков.
+;   (workers :accessor server-workers :initform '()) ; Список нитей-обраточкиков.
    (connections-mutex :accessor server-connections-mutex :initform (bt:make-lock)) ; Блокировка на слот connections.
    (connections :accessor connections :initform (make-hash-table)) ; Хеш-таблица, отображающая сокеты на их клиентские объекты.
    (ctlqueue :accessor ctlqueue :initform (sb-queue:make-queue)) ; Очередь служебных сообщений на закрытие сокетов от вокер-тредов к провайдер-треду
@@ -73,43 +74,86 @@
       (let* ((client (gethash socket connections))
 	     (input (client-read client socket)))
 	(when input
-	  (send-to-workers server (cons (curry #'client-on-command client socket input) socket)))))))
+          (let ((zone (getf (globvars client) '*player-zone*)))
+            (send-client-input-to-workers
+             server (curry #'client-on-command client socket input) socket zone)))))))
 
-(defgeneric add-worker (server &optional n)
-  (:documentation "Adds 'n' workers to thread pool.")
-  (:method ((server server) &optional n)
+(defstruct server-event
+  "Event that is queued in worker mailboxes and processed by worker"
+  (source nil :type keyword)
+  (function nil :type (or null function))
+  (socket nil :type (or null usocket:stream-usocket))
+  (zone-symbol nil :type keyword))
+
+(defun send-timer-event-to-workers (server fun zone)
+  (send-to-workers server (make-server-event :source :timer-event
+                                             :function fun
+                                             :socket nil
+                                             :zone-symbol (zone-symbol zone))))
+
+(defun send-client-input-to-workers (server fun socket zone)
+  (send-to-workers server (make-server-event :source :client-input
+                                             :function fun
+                                             :socket socket
+                                             :zone-symbol (zone-symbol zone))))
+
+(defgeneric add-zone-worker (server zone-symbol)
+  (:documentation "Adds one worker thread dedicated to specified zone to thread pool.")
+  (:method ((server server) zone-symbol)
     (bt:with-recursive-lock-held ((server-workers-mutex server))
-      (dotimes (count n)
-	(push (bt:make-thread #'(lambda () (worker-thread server))) (server-workers server))))))
+      (setf (gethash zone-symbol (slot-value server 'mailbox-hash)) (sb-concurrency:make-mailbox)
+            (gethash zone-symbol (slot-value server 'workers-hash)) (bt:make-thread #'(lambda () (worker-thread server zone-symbol)))))))
 
-(defgeneric worker-thread (server)
-  (:documentation "Function that is executed within worker threads. Processes input queue.")
+(defgeneric shutdown-workers (server)
+  (:documentation "Send shutdown message to all workers of server")
   (:method ((server server))
-    (unwind-protect
-	 (handler-case
-	     (with-slots (cmd-mailbox) server
-               (iter (for event = (sb-concurrency:receive-message cmd-mailbox))
-	         (for (fun . socket) = event)
-		 (handler-case
-		     (funcall fun)
-		   (disconnect-client ()
-		     (sb-queue:enqueue (cons 'disconnect-client socket) (ctlqueue server))))))
-	   (shutting-down ()
-	     ;; anything to do here?
-	     (error "shutting-down handler-case not implemented"))
-	   (sb-int:closed-stream-error ()
-	     ;; FIXME: это случается когда provider-thread ещё не успела удалить
-	     ;; сокет и ему пришла новая команда на обработку. В принципе, этой ошибки быть не должно.
-	     ))
-      (bt:with-recursive-lock-held ((server-workers-mutex server))
-	(setf (server-workers server) (delete (bt:current-thread) (server-workers server)))
-	(add-worker server 1)))))
+    (iter
+      (for (zone-symbol nil) in-hashtable (slot-value server 'workers-hash))
+      (send-to-workers server (make-server-event :source :shutting-down
+                                                 :function nil
+                                                 :socket nil
+                                                 :zone-symbol zone-symbol)))))
+
+(defgeneric worker-thread (server zone-symbol)
+  (:documentation "Function that is executed within worker threads. Processes input queue.")
+  (:method ((server server) zone-symbol)
+    (let ((shutting-down-p nil))
+      (unwind-protect
+	   (handler-case
+	       (with-slots (mailbox-hash) server
+                 (iter
+                   (with cmd-mailbox = (gethash zone-symbol mailbox-hash ))
+                   (for event = (sb-concurrency:receive-message cmd-mailbox))
+                   (assert (eql zone-symbol (server-event-zone-symbol event)))
+                   ;; TODO: реализовать проверку на то, что зона обработчика соответствует зоне клиента
+                   (ecase (server-event-source event)
+                     (:timer-event (funcall (server-event-function event)))
+                     (:shutting-down (setf shutting-down-p t) (finish))
+                     (:client-input
+                      (handler-case
+		          (funcall (server-event-function event))
+		        (disconnect-client ()
+		          (sb-queue:enqueue (cons 'disconnect-client (server-event-socket event))
+                                            (ctlqueue server))))))))
+             (shutting-down ()
+               (setf shutting-down-p t))
+	     (sb-int:closed-stream-error ()
+               ;; FIXME: это случается когда provider-thread ещё не успела удалить
+               ;; сокет и ему пришла новая команда на обработку. В принципе, этой ошибки быть не должно.
+	       ))
+        (unless shutting-down-p
+          (bt:with-recursive-lock-held ((server-workers-mutex server))
+            ;; TODO: log error
+            ;; Remove current thread after error and add fresh one instead
+            (remhash zone-symbol (slot-value server 'mailbox-hash))
+            (remhash zone-symbol (slot-value server 'workers-hash))
+            (add-zone-worker server zone-symbol)))))))
 
 (defgeneric send-to-workers (server event)
   (:documentation "Enqueues event to server queue.")
   (:method ((server server) event)
-    (with-slots (cmd-mailbox) server
-      (sb-concurrency:send-message cmd-mailbox event))))
+    (with-slots (mailbox-hash) server
+      (sb-concurrency:send-message (gethash (server-event-zone-symbol event) mailbox-hash) event))))
 
 ;;(bt:interrupt-thread *listener-thread*
 ;;  #'(lambda () (signal 'shutting-down)))
@@ -136,14 +180,17 @@
 				 (unless (null (slot-value s 'usocket::state))
 				   (let ((new (socket-accept s :element-type '(unsigned-byte 8))))
 				     (setf sockets (push new sockets))
+                                     ;; FIXME: following line writes to client, can get SB-INT:BROKEN-PIPE
+                                     ;; error on fast disconnect.
 				     (handle-client-connect server new)))))
-			     ;; ELSE: client socket
+			     ;; ELSE: event in existing client socket
 			     (if (listen (socket-stream s))
 				 ;; THEN: input available
 				 (handle-client-input server s)
 				 ;; ELSE: EOF, lost connection
 				 (disconnect-socket s)))
 		       (end-of-file ()
+                         ;; TODO: add logging
 			 ;; not sure we ever get here
 			 ))
 		     (unless (sb-queue:queue-empty-p (ctlqueue server))
@@ -153,22 +200,50 @@
 			 (format t "Got (~a ~a) in control queue~%" message socket)
 			 (if (eq message 'disconnect-client)
 			     (disconnect-socket socket)
-			     (error "Unknow message ~S in control queue." message)))))))
+			     (error "Unknow message ~S in control queue." message)))))
+               (format t "~&After provider thread wait-for-input result iteration.~%")
+               (iter (for s in sockets)
+                 (format t "socket: ~s, fd: ~s~%" s (socket s)))
+               (when (eql -1 (sb-bsd-sockets:socket-file-descriptor (socket master-socket)))
+                 (finish))))
 	(bt:with-lock-held (connlock)
+          #+(or) ;; Now closing socket is reponsibility of STOP-SERVER
 	  (iter (for s in sockets)
 		(unless (eql s master-socket)
 		  (handle-client-disconnect server s))
 		(socket-close s)))))))
 
-(defun run-lispmud (port &key (host #(0 0 0 0)) (n-thread 1))
+;; FIXME: move provider-thread to a slot of server
+(defgeneric stop-server (server master-socket provider-thread)
+  (:documentation "Fully stop server and close all sockets and threads.")
+  (:method ((server server) master-socket provider-thread)
+    ;; Closing master-socket causes provider-thread to stop
+    (socket-close master-socket)
+    ;; Stop all worker threads
+    (shutdown-workers server)
+    (bt:join-thread provider-thread)
+    ;; Wait for graceful termination of worker threads.
+    (bt:with-recursive-lock-held ((server-workers-mutex server))
+      (iter
+        (for (nil thread) in-hashtable (slot-value server 'workers-hash ))
+        (bt:join-thread thread)))
+    ;; Close all client sockets active on moment of stop-server call.
+    (bt:with-lock-held ((server-connections-mutex server))
+      (iter
+        (for (socket nil) in-hashtable (connections server))
+        (format t "~&FOO~&")
+        (handle-client-disconnect server socket)
+        (socket-close socket)))))
+
+(defun run-lispmud (port &key (host #(0 0 0 0)) zone-symbols)
   (let ((serv (make-instance 'server))
 	(master-socket (socket-listen host port :element-type 'unsigned-byte)))
     (unwind-protect
 	 (progn
-	   (add-worker serv n-thread)
+           (iter (for zone-symbol in zone-symbols)
+                 (add-zone-worker serv zone-symbol))
 	   (provider-thread serv master-socket))
       (socket-close master-socket))))
-
 
 ;; ================== Basic client implementation ==================
 
@@ -187,7 +262,7 @@
 
 (defmethod initialize-instance :after ((client client) &key &allow-other-keys)
   (setf (globvars client) (list '*standard-output* (out-stream client)
-				'*player-zone* (first *zone-list*)
+				'*player-zone* :no-zone
 				'*player-room* (first (entry-rooms (first *zone-list*)))
 				'*player* nil
 				'*client* client)))

@@ -55,6 +55,8 @@
                  (:file "userdb")
                  (:file "text-editor")
                  (:file "command")
-                 (:file "event-timer"))))
+                 (:file "event-timer")
+                 (:file "core-zone")
+                 (:file "core-server"))))
   :description "Test system for lispmud"
   :perform (test-op (op c) (symbol-call :5am :run! :lispmud)))

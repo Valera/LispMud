@@ -58,7 +58,7 @@
                (let ((client-socket (usocket:socket-connect #(127 0 0 1) *test-port*)))
                  (unwind-protect
                       (progn
-                        (sleep 0.05)
+                        (sleep 1.0) ; FIXME: use wait-for-input
                         (let ((welcome-string (%read-all-available-bytes (socket-stream client-socket))))
                           (format t "~&read bytes: ~s~%" welcome-string)
                           (5am:is (search "Добро пожаловать" welcome-string))))

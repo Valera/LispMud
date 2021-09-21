@@ -218,16 +218,22 @@
   (:documentation "Fully stop server and close all sockets and threads.")
   (:method ((server server) master-socket provider-thread)
     ;; Closing master-socket causes provider-thread to stop
+    (format t "~&#1~&")
     (socket-close master-socket)
     ;; Stop all worker threads
+    (format t "~&#2~&")
     (shutdown-workers server)
+    (format t "~&#3~&")
     (bt:join-thread provider-thread)
     ;; Wait for graceful termination of worker threads.
+    (format t "~&#4~&")
     (bt:with-recursive-lock-held ((server-workers-mutex server))
       (iter
+        (format t "~&#4.1~&")
         (for (nil thread) in-hashtable (slot-value server 'workers-hash ))
         (bt:join-thread thread)))
     ;; Close all client sockets active on moment of stop-server call.
+    (format t "~&#5~&")
     (bt:with-lock-held ((server-connections-mutex server))
       (iter
         (for (socket nil) in-hashtable (connections server))

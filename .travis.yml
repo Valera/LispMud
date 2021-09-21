@@ -1,0 +1,80 @@
+### Example configuration for Travis CI ###
+language: generic
+
+#addons:
+#  homebrew:
+#    update: true
+#    packages:
+#    - roswell
+#  apt:
+#    packages:
+#      - libc6-i386 # needed for a couple implementations
+#      - default-jre # needed for abcl
+
+# Runs each lisp implementation on each of the listed OS
+os:
+  - linux
+#  - osx # OSX has a long setup on travis, so it's likely easier to just run select implementations on OSX
+
+env:
+  global:
+    - PATH=~/.roswell/bin:$PATH
+    - ROSWELL_INSTALL_DIR=$HOME/.roswell
+    - COVERAGE_EXCLUDE=tests  # for prove or rove
+  jobs:
+    # The implementation and whether coverage is send to coveralls are controlled with these environmental variables
+    - LISP=sbcl-bin COVERALLS=true
+    #- LISP=ccl-bin
+    #- LISP=abcl
+    #- LISP=ecl   # warn: in our experience, compilations times can be long on ECL.
+
+# Additional OS/Lisp combinations can be added to those generated above
+#jobs:
+#  include:
+#    - os: osx
+#      env: LISP=sbcl-bin
+#    - os: osx
+#      env: LISP=ccl-bin
+
+# Note that this should only be used if there is no interest for the library to work on that system
+#  allow_failures:
+#    - env: LISP=abcl
+#    - env: LISP=ecl
+#    - env: LISP=cmucl
+#    - env: LISP=alisp
+#      os: osx
+
+  fast_finish: true
+
+cache:
+  directories:
+    - $HOME/.roswell
+    - $HOME/.config/common-lisp
+
+services:
+  - postgresql
+
+before_script:
+  - psql -c 'create database travis_ci_test;' -U postgres
+  - cp sample-config.lisp test-config.lisp
+  - sed -i 's/:db-name ""/:db-name "travis_ci_test"/' test-config.lisp
+  - sed -i 's/:db-user ""/:db-user "postgres"/' test-config.lisp
+  - export LISPMUD_TEST_DB=travis_ci_test
+  - export LISPMUD_TEST_DB_USER=postgres
+  - export LISPMUD_TEST_DB_PASSWORD=''
+
+install:
+  - curl -L https://raw.githubusercontent.com/roswell/roswell/release/scripts/install-for-ci.sh | sh
+  - ros install ci-utils #for run-fiveam
+#  - ros install prove #for run-prove
+#  - ros install rove #for [run-] rove
+
+  # If asdf 3.16 or higher is needed, uncomment the following lines
+  #- mkdir -p ~/common-lisp
+  #- if [ "$LISP" == "ccl-bin" ]; then git clone https://gitlab.common-lisp.net/asdf/asdf.git ~/common-lisp; fi
+
+script:
+  - rm mudsketcher.asd  # Remove musketcher system because run-fiveam tries to atoload all systems
+  - run-fiveam -e t -l lispmud/tests :lispmud
+  #- run-prove foo.asd
+  #- rove foo.asd

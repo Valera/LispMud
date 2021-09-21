@@ -39,12 +39,20 @@
 (defun make-mocked-zone ()
   (list (make-instance 'zone :name "Mocked zone" :entry-rooms (list :mocked-room))))
 
+;; TODO: deduplicate fun
+(defun db-connection-spec-from-environment ()
+  (list
+   (or (uiop:getenv "LISPMUD_TEST_DB") "lispmudtest")
+   (or (uiop:getenv "LISPMUD_TEST_DB_USER") "lispmudtest")
+   (or (uiop:getenv "LISPMUD_TEST_DB_PASSWORD") "lispmudtest")
+   (or (uiop:getenv "LISPMUD_TEST_DB_HOST") "localhost")))
+
 (5am:test command-mail
   (let* ((*online-players* (make-hash-table :test 'equal :synchronized t))
          (player-frodo (make-instance 'player :name "Фродо" :output (make-string-output-stream)))
          (player-sam (make-instance 'player :name "Сэм" :output (make-string-output-stream)))
          (*player* player-frodo)
-         (*db-connection-spec* (list "lispmudtest" "lispmudtest" "lispmudtest" "localhost"))
+         (*db-connection-spec* (db-connection-spec-from-environment))
          (*zone-list* (make-mocked-zone))
          ;; separate let because constructor need dynamic vars
          (*client* (make-instance 'client :input-handlers nil

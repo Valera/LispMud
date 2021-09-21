@@ -43,8 +43,16 @@
     (5am:is (equal nil (online-user-names)))
     (5am:is (equal nil (online-players)))))
 
+;; TODO: deduplicate fun
+(defun db-connection-spec-from-environment ()
+  (list
+   (or (uiop:getenv "LISPMUD_TEST_DB") "lispmudtest")
+   (or (uiop:getenv "LISPMUD_TEST_DB_USER") "lispmudtest")
+   (or (uiop:getenv "LISPMUD_TEST_DB_PASSWORD") "lispmudtest")
+   (or (uiop:getenv "LISPMUD_TEST_DB_HOST") "localhost")))
+
 (5am:test registration
-  (let* ((*db-connection-spec* (list "lispmudtest" "lispmudtest" "lispmudtest" "localhost")))
+  (let* ((*db-connection-spec* (db-connection-spec-from-environment)))
     (apply #'recreate-all-tables *db-connection-spec*)
     (pomo:with-connection (append *db-connection-spec* '(:pooled-p t))
       (5am:is (register-user "Агроном" "password"))

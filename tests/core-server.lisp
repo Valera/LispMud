@@ -37,6 +37,7 @@
         :doing (vector-push-extend (read-char stream) buffer))
       buffer))
 
+#+(or)
 (5am:test start-server-and-process-one-conection
   (let ((lispmud/main::*world-filename* (uiop:merge-pathnames* "content/world.lmud"
                                                  (asdf:system-source-directory :lispmud))))
@@ -44,7 +45,7 @@
     (lispmud/main::load-config "test-config.lisp" :port-arg *test-port*) ;; FIXME we are not testing main.lisp here
     (lispmud/main::initialize-game) ;; FIXME: should not be here; we are not testing main.lisp here
     (let ((n-threads (length (bt:all-threads)))
-          (serv (make-instance 'server))
+          (serv (make-instance 'server :wait-for-input-timeout 1))
           (master-socket (socket-listen #(127 0 0 1) *test-port* :element-type 'unsigned-byte :reuse-address t))
           (client-socket-no-disconnect nil)
           provider-thread)
@@ -52,13 +53,14 @@
            (progn
              (pvalue master-socket)
              (add-zone-worker serv *test-zone-symbol*)
-             (setf provider-thread (bt:make-thread #'(lambda () (provider-thread serv master-socket))))
+             (setf provider-thread
+                   (bt:make-thread #'(lambda () (provider-thread serv master-socket)) :name (format nil "PT ~a" *test-port*)))
              (5am:is (eql (+ 2 n-threads) (length (bt:all-threads))))
              (setf client-socket-no-disconnect (usocket:socket-connect #(127 0 0 1) *test-port*))
                (let ((client-socket (usocket:socket-connect #(127 0 0 1) *test-port*)))
                  (unwind-protect
                       (progn
-                        (sleep 0.05)
+                        (wait-for-input client-socket)
                         (let ((welcome-string (%read-all-available-bytes (socket-stream client-socket))))
                           (format t "~&read bytes: ~s~%" welcome-string)
                           (5am:is (search "Добро пожаловать" welcome-string))))
@@ -69,4 +71,32 @@
         (socket-close (socket-listen #(127 0 0 1) *test-port* :element-type 'unsigned-byte :reuse-address t))
         (socket-close client-socket-no-disconnect))))
 
-;; TODO: создать сервер, добавить зону, обработать одно событие таймера
+#+(or)
+(5am:test start-server-and-process-immediate-disconnect
+  "Create server, connect and immediately disconnect client, server should work correctly."
+  (let ((lispmud/main::*world-filename* (uiop:merge-pathnames* "content/world.lmud"
+                                                               (asdf:system-source-directory :lispmud))))
+    ;; FIXME: better config names, maybe test section inside one config?
+    (lispmud/main::load-config "test-config.lisp" :port-arg *test-port*) ;; FIXME we are not testing main.lisp here
+    (lispmud/main::initialize-game) ;; FIXME: should not be here; we are not testing main.lisp here
+    (let ((n-threads (length (bt:all-threads)))
+          (serv (make-instance 'server :wait-for-input-timeout 1))
+          (master-socket (socket-listen #(127 0 0 1) *test-port* :element-type 'unsigned-byte :reuse-address t))
+          (client-socket-no-disconnect nil)
+          provider-thread)
+      (unwind-protect
+           (progn
+             (pvalue master-socket)
+             (add-zone-worker serv *test-zone-symbol*)
+             (setf provider-thread
+                   (bt:make-thread #'(lambda () (provider-thread serv master-socket)) :name (format nil "PT ~a" *test-port*)))
+             (5am:is (eql (+ 2 n-threads) (length (bt:all-threads))))
+             (setf client-socket-no-disconnect (usocket:socket-connect #(127 0 0 1) *test-port*))
+             (socket-close (usocket:socket-connect #(127 0 0 1) *test-port*)))
+        (stop-server serv master-socket provider-thread))
+      (5am:is (eql n-threads (length (bt:all-threads))))
+      ;; Check creating socket on the same port is not blocked.
+      (socket-close (socket-listen #(127 0 0 1) *test-port* :element-type 'unsigned-byte :reuse-address t))
+      (socket-close client-socket-no-disconnect))))
+
+;; TODO: create server, add zone, process one timer event

@@ -47,7 +47,9 @@
   (start-line-p stream))
 
 (defmethod stream-force-output ((stream telnet-byte-output-stream))
-  (force-output (inner-stream stream)))
+  "Flushes the buffer of STREAM but does not raise an arror if STREAM is closed"
+  (handler-case (force-output (inner-stream stream))
+    (sb-int:simple-stream-error (c) (declare (ignore c)) nil)))
 
 (defmethod stream-write-char ((stream telnet-byte-output-stream) char)
   (with-slots (buffer columns inner-stream start-line-p encoding) stream
@@ -56,7 +58,6 @@
        (vector-push-extend #\Return buffer)
        (vector-push-extend #\Newline buffer)
        (send-string buffer inner-stream encoding)
-       (force-output inner-stream)
        (setf (fill-pointer buffer) 0
 	     start-line-p t))
       ((and (eq :cp1251 encoding) (char= char #\я))
@@ -68,9 +69,12 @@
        (setf start-line-p nil)))))
 
 (defun send-string (buffer byte-stream encoding &key (start 0) end)
+  "Sends BUFFER to BYTE-STREAM with bounds START and END, then makes \"soft force-output\":
+No error is produced if connection is closed."
   (write-sequence (sb-ext:string-to-octets buffer :external-format encoding :start start :end end)
 		  byte-stream)
-  (force-output byte-stream))
+  (handler-case (force-output byte-stream)
+    (sb-int:simple-stream-error (c) (declare (ignore c)) nil)))
 
 (defmethod stream-write-string ((stream telnet-byte-output-stream) string &optional (start 0) end)
   (with-slots (buffer columns inner-stream start-line-p encoding) stream

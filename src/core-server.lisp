@@ -26,6 +26,10 @@
 ;   (workers :accessor server-workers :initform '()) ; Список нитей-обраточкиков.
    (connections-mutex :accessor server-connections-mutex :initform (bt:make-lock)) ; Блокировка на слот connections.
    (connections :accessor connections :initform (make-hash-table)) ; Хеш-таблица, отображающая сокеты на их клиентские объекты.
+   (wait-for-input-timeout :accessor wait-for-input-timeout :initarg :wait-for-input-timeout :initform 0.5
+     :documentation "Timeout in seconds for wait-for-input function. Affercts server stop time.
+Set smaller values for faster testing.")
+   (provider-thread-stop-flag :accessor provider-thread-stop-flag :initform nil)
    (ctlqueue :accessor ctlqueue :initform (sb-queue:make-queue)) ; Очередь служебных сообщений на закрытие сокетов от вокер-тредов к провайдер-треду
    ))
 
@@ -64,7 +68,11 @@
     (client-disconnect (gethash socket (connections server)))
     (remhash socket (connections server))
     (format t "disconnect: ~a ~a~%" server socket)
-    (socket-close socket)))
+    (handler-case (socket-close socket)
+      ;; In case of write after client disconnect usocket
+      ;; can raise UNKNOWN-ERROR caused by SB-INT:BROKEN-PIPE
+      (unknown-error (c) (unless (typep (usocket::usocket-real-error c) 'sb-int:broken-pipe)
+                           (error "Unexpected real socket error ~S" c))))))
 
 (defgeneric handle-client-input (server socket)
   (:documentation "Called from event loop when data is available in socket")
@@ -155,85 +163,75 @@
     (with-slots (mailbox-hash) server
       (sb-concurrency:send-message (gethash (server-event-zone-symbol event) mailbox-hash) event))))
 
-;;(bt:interrupt-thread *listener-thread*
-;;  #'(lambda () (signal 'shutting-down)))
-;;(bt:join-thread *listener-thread*)
-
 (defgeneric provider-thread (server master-socket)
   (:documentation "Main server loop, waits for input on 'master-socket' and dispatches data.")
   (:method ((server server) master-socket)
     (let ((sockets (list master-socket))
-          (connlock (server-connections-mutex server)))
+          (connlock (server-connections-mutex server))
+          (timeout (wait-for-input-timeout server)))
       (unwind-protect
 	   (flet ((disconnect-socket (s)
 		    (bt:with-lock-held (connlock)
 		      (handle-client-disconnect server s))
-		    (setf sockets (delete s sockets))
-		    (socket-close s)))
+		    (setf sockets (delete s sockets))))
 	     (iter
-	       (iter (for s in (wait-for-input sockets :ready-only t))
-		     (handler-case
-			 (if (eq s master-socket)
-			     ;; THEN: we have new connection
-			     (progn
-			       (bt:with-lock-held (connlock)
-				 (unless (null (slot-value s 'usocket::state))
-				   (let ((new (socket-accept s :element-type '(unsigned-byte 8))))
-				     (setf sockets (push new sockets))
-                                     ;; FIXME: following line writes to client, can get SB-INT:BROKEN-PIPE
-                                     ;; error on fast disconnect.
-				     (handle-client-connect server new)))))
-			     ;; ELSE: event in existing client socket
-			     (if (listen (socket-stream s))
-				 ;; THEN: input available
-				 (handle-client-input server s)
-				 ;; ELSE: EOF, lost connection
-				 (disconnect-socket s)))
-		       (end-of-file ()
-                         ;; TODO: add logging
-			 ;; not sure we ever get here
-			 ))
-		     (unless (sb-queue:queue-empty-p (ctlqueue server))
-		       ;; If queue is not emty, disconnet correcponging socket.
-		       (destructuring-bind (message . socket)
-			   (sb-queue:dequeue (ctlqueue server))
-			 (format t "Got (~a ~a) in control queue~%" message socket)
-			 (if (eq message 'disconnect-client)
-			     (disconnect-socket socket)
-			     (error "Unknow message ~S in control queue." message)))))
-               (format t "~&After provider thread wait-for-input result iteration.~%")
-               (iter (for s in sockets)
-                 (format t "socket: ~s, fd: ~s~%" s (socket s)))
-               (when (eql -1 (sb-bsd-sockets:socket-file-descriptor (socket master-socket)))
-                 (finish))))
-	(bt:with-lock-held (connlock)
-          #+(or) ;; Now closing socket is reponsibility of STOP-SERVER
-	  (iter (for s in sockets)
-		(unless (eql s master-socket)
-		  (handle-client-disconnect server s))
-		(socket-close s)))))))
+               (for ready-sockets = (wait-for-input sockets :ready-only t :timeout timeout))
+               (when ready-sockets
+                 (iter (for s in ready-sockets)
+                   (handler-case
+                       (if (eq s master-socket)
+                           ;; THEN: we have new connection
+                           (progn
+                             (bt:with-lock-held (connlock)
+                               (unless (null (slot-value s 'usocket::state))
+                                 (let ((new (socket-accept s :element-type '(unsigned-byte 8))))
+                                   (setf sockets (push new sockets))
+                                   (handle-client-connect server new)))))
+                           ;; ELSE: event in existing client socket
+                           (if (handler-case (listen (socket-stream s))
+                                 ;; listen can generate SB-INT:SIMPLE-STREAM-ERROR, it's Ok.
+                                 (sb-int:simple-stream-error (c) (declare (ignore c)) nil))
+                               ;; THEN: input available
+                               (handle-client-input server s)
+                               ;; ELSE: EOF, lost connection
+                               (disconnect-socket s)))
+                     (end-of-file ()
+                       ;; TODO: add logging
+                       ;; not sure we ever get here
+                       ))
+                   (unless (sb-queue:queue-empty-p (ctlqueue server))
+                     ;; If queue is not emty, disconnet correcponging socket.
+                     (destructuring-bind (message . socket)
+                         (sb-queue:dequeue (ctlqueue server))
+                       (format t "Got (~a ~a) in control queue~%" message socket)
+                       (if (eq message 'disconnect-client)
+                           (disconnect-socket socket)
+                           (error "Unknow message ~S in control queue." message))))))
+               (when (provider-thread-stop-flag server)
+                 (finish))))))))
 
 ;; FIXME: move provider-thread to a slot of server
 (defgeneric stop-server (server master-socket provider-thread)
   (:documentation "Fully stop server and close all sockets and threads.")
   (:method ((server server) master-socket provider-thread)
     ;; Closing master-socket causes provider-thread to stop
-    (socket-close master-socket)
+    (setf (provider-thread-stop-flag server) t)
     ;; Stop all worker threads
     (shutdown-workers server)
+    ;; Wait for provider thread to terminate.
     (bt:join-thread provider-thread)
+    ;; Close master socket.
+    (socket-close master-socket)
     ;; Wait for graceful termination of worker threads.
     (bt:with-recursive-lock-held ((server-workers-mutex server))
       (iter
-        (for (nil thread) in-hashtable (slot-value server 'workers-hash ))
+        (for (nil thread) in-hashtable (slot-value server 'workers-hash))
         (bt:join-thread thread)))
-    ;; Close all client sockets active on moment of stop-server call.
+    ;; Close all client sockets remaining active on moment of stop-server call.
     (bt:with-lock-held ((server-connections-mutex server))
       (iter
         (for (socket nil) in-hashtable (connections server))
-        (format t "~&FOO~&")
-        (handle-client-disconnect server socket)
-        (socket-close socket)))))
+        (handle-client-disconnect server socket)))))
 
 (defun run-lispmud (port &key (host #(0 0 0 0)) zone-symbols)
   (let ((serv (make-instance 'server))

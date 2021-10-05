@@ -120,7 +120,10 @@ Set smaller values for faster testing.")
       (send-to-workers server (make-server-event :source :shutting-down
                                                  :function nil
                                                  :socket nil
-                                                 :zone-symbol zone-symbol)))))
+                                                 :zone-symbol zone-symbol)))
+    (iter
+      (for (nil worker) in-hashtable (slot-value server 'workers-hash))
+      (bt:join-thread worker))))
 
 (defgeneric worker-thread (server zone-symbol)
   (:documentation "Function that is executed within worker threads. Processes input queue.")

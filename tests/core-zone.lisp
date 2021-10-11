@@ -2,7 +2,7 @@
 (defpackage :lispmud/tests/core-zone
   (:use :cl)
   (:use :lispmud/core-threadvars)
-  (:import-from :lispmud/core-zone #:zone #:load-zone #:save-zone))
+  (:import-from :lispmud/core-zone #:zone #:load-zone #:save-zone #:maybe-convert-to-keyword))
 (in-package :lispmud/tests/core-zone)
 
 (5am:def-suite core-zone-suite
@@ -12,15 +12,13 @@
 
 (5am:test load-and-resave
   (let* ((zone-filename (uiop:merge-pathnames* "content/test.lzon" (asdf:system-source-directory :lispmud)))
-         (zone-sexp (with-open-file (stream zone-filename)
-                      (let ((*package* (find-package :lispmud)))
-                        (read stream))))
+         (zone-json (yason:parse (alexandria:read-file-into-string zone-filename)
+                                 :object-key-fn #'maybe-convert-to-keyword :object-as :plist))
          (loaded-zone (load-zone zone-filename))
-         (saved-zone-sexp (uiop:call-with-temporary-file
+         (saved-zone-json (uiop:call-with-temporary-file
                            (lambda (stream filename)
-                             (declare (ignore stream))
-                             (save-zone loaded-zone filename)
-                             (with-open-file (stream zone-filename)
-                               (let ((*package* (find-package :lispmud)))
-                                 (read stream)))))))
-    (5am:is (equal zone-sexp saved-zone-sexp))))
+                             (save-zone loaded-zone stream)
+                             (with-open-file (stream1 filename)
+                               (yason:parse stream1 :object-key-fn #'maybe-convert-to-keyword
+                                                    :object-as :plist))))))
+    (5am:is (tree-equal zone-json saved-zone-json :test #'equal))))

@@ -18,6 +18,7 @@
 (defvar *new-scheduled-events* nil "Events scheduled after last timer activation, not yet sorted")
 (defvar *event-timer-lock* (make-lock "Event timer system global lock") "Lock for *timer* object and *timer-stop-flag*")
 (defvar *new-scheduled-events-lock* (make-lock "*new-scheduled-events* list lock") "Lock for *new-scheduled-events* list")
+(defvar *event-execution-callback*)
 
 (defun %sort-and-merge-new-scheduled-events (new-scheduled-events scheduled-events)
   "Adds elemets of new-sheduled-events keeping time ascending. sheduled-events must be sorted."
@@ -51,7 +52,7 @@ you should set repeat-interval to be 4-5 times more than *timer-period*."
                 (for event-function = (mud-event-function event))
                 (when event-function
                   (format t "~&Calling fun ~a~%" event-function)
-                  (funcall event-function)) ; FIXME: send message to worker thread. Now race conditions han happen.
+                  (funcall *event-execution-callback* event-function (mud-event-context event)))
                 (when (mud-event-repeat-interval event)
                   (format t "~&...rescheduling it.~%")
                   (with-lock-held (*new-scheduled-events-lock*)
@@ -62,10 +63,10 @@ you should set repeat-interval to be 4-5 times more than *timer-period*."
   "Structure that holds description of event scheduled for future execution"
   (time (error "time slot does not have default value") :type integer)
   (function (error "function slot does not have default value") :type function)
-  domain
+  context
   (repeat-interval nil  :type (or null integer)))
 
-(defun add-event (time event-fun zone repeat-interval)
+(defun add-event (time event-fun context repeat-interval)
   "Add event for future execution. Events are processed at timer activations with *timer-period* period.
 repeat-interval argument should be 4-5 times more than *timer-period* for more accurate scheduling.
 If repeat-interval is less than *timer-perioud* event will be still executed only once per timer activation."
@@ -73,11 +74,15 @@ If repeat-interval is less than *timer-perioud* event will be still executed onl
     (flet ((to-internal-units (seconds) (round (* seconds internal-time-units-per-second))))
       (push (make-mud-event :time (+ (get-internal-real-time) (to-internal-units time))
                             :function event-fun
-                            :domain zone
+                            :context context
                             :repeat-interval (when repeat-interval (to-internal-units repeat-interval)))
             *new-scheduled-events*))))
 
-(defun start-event-loop ()
+(defun execute-event-without-context (event-function context)
+  (declare (ignore context))
+  (funcall event-function))
+
+(defun start-event-loop (&key (event-execution-callback #'execute-event-without-context))
   "Starts event loop, calling function pick-events wiht *timer-period* period.
 If timer was already started, it is stopped and all previous events are removed."
   (with-lock-held (*event-timer-lock*)
@@ -85,7 +90,8 @@ If timer was already started, it is stopped and all previous events are removed.
       (sb-ext:unschedule-timer *timer*))
     (with-lock-held (*new-scheduled-events-lock*)
       (setf *scheduled-events* nil
-	    *new-scheduled-events* nil))
+	    *new-scheduled-events* nil
+            *event-execution-callback* event-execution-callback))
     (sb-ext:schedule-timer (setf *timer* (sb-ext:make-timer (lambda () (pick-events)) :thread t))
 		    *timer-period* :repeat-interval *timer-period*)))
 

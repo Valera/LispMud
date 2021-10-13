@@ -38,8 +38,8 @@
   (incf *zone-id-source*)
   (setf (lock zone) (make-lock (concatenate 'string "Zone mutex: " (name zone)))))
 
-(defmethod zone-symbol ((zone (eql :no-zone)))
-  :no-zone)
+(defmethod zone-symbol ((zone symbol))
+  zone)
 
 (defun save-zone (zone stream)
   (let ((map-array (map-array zone)))
@@ -188,7 +188,7 @@
 		     (concatenate 'list mob-spec
 				  (list :zone zone :mob-room (aref (map-array zone) x y)))))
 	(push mob (mobs (aref (map-array zone) y x)))
-	(schedule-mob-events mob (aref (map-array zone) y x) zone))
+	(schedule-mob-events mob (aref (map-array zone) y x) (zone-symbol zone)))
       (setf (aref (mobs-counters zone) mob-index) spawn-limit)
       (setf (aref (mobs-max-numbers zone) mob-index) spawn-limit))))
 

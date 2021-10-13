@@ -10,8 +10,7 @@
   (:import-from :lispmud/userdb #:reset-online-users)
   (:import-from :lispmud/command #:init-commands)
   (:import-from :lispmud/world #:load-world)
-  (:import-from :lispmud/event-timer #:start-event-loop #:stop-event-loop)
-  (:import-from :lispmud/core-zone #:temp-start-work #:zone-symbol)
+  (:import-from :lispmud/core-zone #:zone-symbol)
   (:import-from :lispmud/core-server #:run-lispmud))
 (in-package :lispmud/main)
 
@@ -52,11 +51,8 @@
   (pomo:with-connection (append *db-connection-spec* '(:pooled-p t))
     (initialize-game)
     (load-game-data)
-    (start-event-loop)
-    (temp-start-work (first *zone-list*)) ;; Временная функция -- добаляет собаку на карту.
     (pvalue bt:*default-special-bindings*)
     (unwind-protect
          ;; TODO pass :no-zone on the same level as in client constructor
 	 (run-lispmud *port* :host *host* :zone-symbols (cons :no-zone (mapcar #'zone-symbol *zone-list*)))
-      (save-game-data)
-      (stop-event-loop))))
+      (save-game-data))))

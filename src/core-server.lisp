@@ -13,9 +13,10 @@
   (:import-from :iter #:iter #:for #:with #:finish)
   (:import-from :lispmud/core-room #:players)
   (:import-from :lispmud/userdb #:set-user-offline)
-  (:import-from :lispmud/core-zone #:entry-rooms #:zone-symbol)
+  (:import-from :lispmud/core-zone #:entry-rooms #:zone-symbol #:temp-start-work)
   (:import-from :lispmud/registration #:register-and-login-fsm)
   (:import-from :lispmud/core-streams #:telnet-byte-output-stream)
+  (:import-from :lispmud/event-timer #:start-event-loop #:stop-event-loop)
   (:import-from :lispmud/core-utils #:with-variables-from #:pvalue))
 (in-package :lispmud/core-server)
 
@@ -243,7 +244,14 @@ Set smaller values for faster testing.")
 	 (progn
            (iter (for zone-symbol in zone-symbols)
                  (add-zone-worker serv zone-symbol))
-	   (provider-thread serv master-socket))
+           (start-event-loop :event-execution-callback
+                             (lambda (event-fun zone)
+                               (format t "~&event-execution-callback~&")
+                               (send-timer-event-to-workers serv event-fun zone)))
+           (temp-start-work (first *zone-list*))  ;; TODO: iterate over zones
+           (unwind-protect
+                (provider-thread serv master-socket)
+             (stop-event-loop)))
       (socket-close master-socket))))
 
 ;; ================== Basic client implementation ==================

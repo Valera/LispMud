@@ -6,7 +6,7 @@
   (:import-from :lispmud/event-timer
                 #:make-mud-event #:start-event-loop #:stop-event-loop #:*timer* #:*timer-period*
                 #:*timer-stop-flag* #:pick-events #:add-event #:*new-scheduled-events*
-                #:*scheduled-events*))
+                #:*scheduled-events* #:*event-execution-callback* #:execute-event-without-context))
 (in-package :lispmud/tests/event-timer)
 
 (5am:def-suite event-timer
@@ -55,6 +55,7 @@
   (let ((*new-scheduled-events* nil)
         (*scheduled-events* nil)
         (*timer-stop-flag* nil)
+        (*event-execution-callback* #'execute-event-without-context)
         (executed-events nil))
     (sb-ext:without-package-locks
       (with-dynamic-stubs ((get-internal-real-time (* 0 internal-time-units-per-second)))

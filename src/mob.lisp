@@ -109,7 +109,7 @@
 (defgeneric do-animation1 (mob room))
 (defgeneric do-animation2 (mob room))
 
-(defmethod schedule-mob-events ((mob standard-mob) room zone)
+(defmethod schedule-mob-events ((mob standard-mob) room zone-symbol)
   (bind:bind (((:slots animation-1 animation-1-timer
 		       animation-2 animation-2-timer
 		       move-interval)
@@ -120,13 +120,13 @@
 		 (print (list 1 animation animation-timer))
 		 (add-event animation-timer
 			    #'(lambda () (message-to-visitors (mob-room mob) animation))
-			    nil animation-timer))))
+			    zone-symbol animation-timer))))
     (schedule-animation animation-1 animation-1-timer)
     (schedule-animation animation-2 animation-2-timer)
     (print (list 3 move-interval))
     (unless (= 0 move-interval)
       (add-event move-interval #'(lambda () (move-to-other-room mob))
-		 nil move-interval))))
+		 zone-symbol move-interval))))
 
 (defmethod move-to-other-room ((mob standard-mob))
   (let* ((neighbour-rooms-and-directions (open-rooms-and-directions (mob-room mob)))
